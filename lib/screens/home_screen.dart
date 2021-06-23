@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
                 controller.duration = Duration(milliseconds: (delay1 * 1000).toInt());
                 controller.value = 0;
-                controller.forward();
+                // controller.forward();
               },
             )
           ],),
@@ -143,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             topLoading
                 ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: CircularProgressIndicator(),
                 )
                 : SizedBox(height: topLoaderHeight,),
@@ -153,12 +153,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   context.read<LocalDataBloc>().add(StoreCurrencies(currencies: state.currencies));
                   controller.duration = Duration(milliseconds: (state.currencies.delay * 1000).toInt());
                   if(controller.status == AnimationStatus.dismissed) {
-                    controller.forward();
+                    // controller.forward();
                   }
                   if(controller.status == AnimationStatus.completed) {
                     Future.delayed(Duration.zero, () async {
                       controller.value = 0;
-                      controller.forward();
+                      // controller.forward();
                     });
                   }
                   return _bodyUI(state.currencies, Statuses.online, orientation, context);
@@ -260,11 +260,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container();
   }
   Widget _landscapeUI({required Currencies currencies, required BuildContext context, required List<Widget> items}) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      child: CarouselSlider(
-          items: items,
-          options: CarouselOptions(initialPage: carouselPageIndex, onPageChanged: (idx, _) {carouselPageIndex = idx;})),
+    print(MediaQuery.of(context).size.height);
+    print(MediaQuery.of(context).size.width);
+    return Wrap(
+      children: [
+        SizedBox(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height / 1.25,
+          child: CarouselSlider(
+              items: items,
+              options: CarouselOptions(initialPage: carouselPageIndex, onPageChanged: (idx, _) {carouselPageIndex = idx;})
+          ),
+        )
+      ],
     );
   }
   Widget _portraitUI({required Currencies currencies, required List<Widget> items}) {
@@ -312,32 +320,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       status1 = lastStatus;
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 16, bottom: 8),
-          child:Text(succeedTime, style: TextStyle(fontSize: SucceedDatetime.fontSize)),
-        ),
+    return ClipRect(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 8),
+              child:Text(succeedTime, style: TextStyle(fontSize: SucceedDatetime.fontSize)),
+            ),
 
-        Spacer(),
+            Spacer(),
 
-        AnimatedBuilder(
-          animation: animation,
-          builder: (_,snapshot) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 16.0, bottom: 12),
-              child: CustomPaint(
-                painter: status1 != Statuses.offline
-                    ? Painter(sweepAngle: animation.value, color: animation1.value == null ? Colors.green : animation1.value!, status: status1)
-                    : Painter(sweepAngle: degToRad(20670), color: Colors.red, status: status1),
-                size: Size(RingStyles.ringSize,RingStyles.ringSize),
-              ),
-            );
-          },
+            AnimatedBuilder(
+              animation: animation,
+              builder: (_,snapshot) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16.0, bottom: 12),
+                  child: CustomPaint(
+                    painter: status1 != Statuses.offline
+                        ? Painter(sweepAngle: animation.value, color: animation1.value == null ? Colors.green : animation1.value!, status: status1)
+                        : Painter(sweepAngle: degToRad(20670), color: Colors.red, status: status1),
+                    size: Size(RingStyles.ringSize,RingStyles.ringSize),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -450,27 +463,25 @@ class CurrencyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(currencyName, style: TextStyle(fontSize: styles.currencyNameFontSize(), color: styles.currencyNameFontColor()),),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(currencyPrice.toString(), style: TextStyle(fontSize: styles.currencyPriceFontSize()),),
-              gradDirection == Grad_Direction.down
-                  ? Icon(Icons.arrow_drop_down_outlined, size: styles.iconsSize(),)
-                  : Icon(Icons.arrow_drop_up_outlined, size: styles.iconsSize(),)
-            ],
-          )
-        ],
-      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Text(currencyName, style: TextStyle(fontSize: styles.currencyNameFontSize(), color: styles.currencyNameFontColor()),),
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(currencyPrice.toString(), style: TextStyle(fontSize: styles.currencyPriceFontSize()),),
+            gradDirection == Grad_Direction.down
+                ? Icon(Icons.arrow_drop_down_outlined, size: styles.iconsSize(),)
+                : Icon(Icons.arrow_drop_up_outlined, size: styles.iconsSize(),)
+          ],
+        ),
+      ],
     );
   }
 }
