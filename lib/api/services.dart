@@ -41,7 +41,6 @@ class CurrencyProvider implements CurrencyRepo {
     final response = await http.get(Uri.parse('http://kursorub.com/rest/data?cis=8&v=40&sa=0&t=162392525514'))
     .timeout(Duration(milliseconds: (timeout * 1000).toInt()));
       // http.get(Uri.parse('http://kursorub.com/rest/data?cis=8&v=40&sa=0&t=162392525514'))
-    print(response.body);
     final delay = await LocalDataProvider().getDelay();
     return Currencies.fromJson({...jsonDecode(response.body) as Map, ...{"delay": delay}, ...{"time": DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}});
   }
@@ -60,7 +59,6 @@ class LocalDataProvider implements LocalDataRepo {
   @override
   Future<Null> storeCurrencies(Currencies currencies) async {
     final prefs = await SharedPreferences.getInstance();
-    // print(jsonEncode(currencies));
     prefs.setString('currencies', jsonEncode(currencies.toJson()));
     return null;
   }
@@ -100,7 +98,7 @@ class LocalDataProvider implements LocalDataRepo {
   Future<ThemeData> changeTheme() async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      final theme = stringToEnum(prefs.getString('themeMode') == null ? '' : prefs.getString('themeMode')!, Theme_Types.values);
+      final theme = stringThemeToEnum(prefs.getString('themeMode') == null ? '' : prefs.getString('themeMode')!);
       if(theme == Theme_Types.dark) {
         prefs.setString('themeMode', 'light');
         return lightTheme;
@@ -117,7 +115,7 @@ class LocalDataProvider implements LocalDataRepo {
 
     final prefs = await SharedPreferences.getInstance();
     try {
-      final theme = stringToEnum(prefs.getString('themeMode') == null ? '' : prefs.getString('themeMode')!, Theme_Types.values);
+      final theme = stringThemeToEnum(prefs.getString('themeMode') == null ? '' : prefs.getString('themeMode')!);
       if(theme == Theme_Types.dark) {
         return darkTheme;
       }

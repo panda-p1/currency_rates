@@ -1,8 +1,12 @@
 
+import 'package:currencies_pages/api/services.dart';
+
 enum Grad_Direction {
   up,
   down
 }
+
+
 
 String enumToString(Grad_Direction dir) {
   if(dir == Grad_Direction.down) {
@@ -14,59 +18,107 @@ String enumToString(Grad_Direction dir) {
   throw Exception();
 }
 
-T stringToEnum<T>(String str, Iterable<T> values) {
+Grad_Direction stringGradDirToEnum(String str) {
   try {
-    return values.firstWhere(
+    return Grad_Direction.values.firstWhere(
           (value) => value.toString().split('.')[1] == str,
     );
   } catch (e) {
     print("wrong enum type!!");
-    return values.first;
+    return Grad_Direction.values.first;
   }
 }
 
+Theme_Types stringThemeToEnum(String str) {
+  try {
+    return Theme_Types.values.firstWhere(
+          (value) => value.toString().split('.')[1] == str,
+    );
+  } catch (e) {
+    print("wrong enum type!!");
+    return Theme_Types.values.first;
+  }
+}
+
+Currency_Type stringCurTypeToEnum(String str) {
+  try {
+    return Currency_Type.values.firstWhere(
+          (value) => value.toString().split('.')[1] == str,
+    );
+  } catch (e) {
+    print("wrong enum type!!");
+    return Currency_Type.values.first;
+  }
+}
+enum Currency_Type {
+  brent,
+  btc,
+  btcusd,
+  eur,
+  eurusd,
+  usd,
+}
+
+class Currency {
+  final num price;
+  final Grad_Direction gradDirection;
+  final Currency_Type type;
+  Currency({required this.price, required this.gradDirection, required this.type});
+
+  Map<String, dynamic> toJson() => {
+    '${type.toString().substring(type.toString().indexOf('.') + 1)}Change': gradDirection.toString().substring(gradDirection.toString().indexOf('.') + 1),
+    '${type.toString().substring(type.toString().indexOf('.') + 1)}': price
+  };
+}
 
 class Currencies {
-  final num brent;
-  final Grad_Direction brentChange;
-  final num btc;
-  final Grad_Direction btcChange;
-  final num btcusd;
-  final Grad_Direction btcusdChange;
-  final num eur;
-  final Grad_Direction eurChange;
-  final num eurusd;
-  final Grad_Direction eurusdChange;
-  final num usd;
-  final Grad_Direction usdChange;
+  final Currency brent;
+  final Currency btc;
+  final Currency btcusd;
+  final Currency eur;
+  final Currency eurusd;
+  final Currency usd;
   final double delay;
   final String time;
 
   Currencies({
-    required this.brent, required this.brentChange,
-    required this.btc, required this.btcChange, required this.btcusd, required this.btcusdChange,
-    required this.eur, required this.eurChange, required this.eurusd, required this.eurusdChange,
-    required this.usd, required this.usdChange, required this.delay, required this.time
+    required this.brent, required this.btc, required this.btcusd,
+    required this.eur, required this.eurusd, required this.usd,
+    required this.delay, required this.time
   });
+
+  List<Currency> get arrayOfCurrencies => [brent, btc, btcusd, eur, eurusd, usd];
 
   factory Currencies.fromJson(json) {
     return Currencies(
-        brent: json['brent'], brentChange: stringToEnum<Grad_Direction>(json['brentChange'],
-        Grad_Direction.values), btc: json['btc'], btcChange: stringToEnum<Grad_Direction>(json['btcChange'], Grad_Direction.values), btcusd: json['btcusd'],
-        btcusdChange: stringToEnum<Grad_Direction>(json['btcusdChange'], Grad_Direction.values),
-        eur: json['eur'], eurChange: stringToEnum<Grad_Direction>(json['eurChange'], Grad_Direction.values), eurusd: json['eurusd'],
-        eurusdChange: stringToEnum<Grad_Direction>(json['eurusdChange'], Grad_Direction.values), usd: json['usd'],
-        usdChange: stringToEnum<Grad_Direction>(json['usdChange'], Grad_Direction.values),
+        brent: Currency(price: double.parse(json['brent'].toString()), gradDirection: stringGradDirToEnum(json['brentChange']), type: stringCurTypeToEnum('brent')),
+        btc: Currency(price: double.parse(json['btc'].toString()), gradDirection: stringGradDirToEnum(json['btcChange']), type: stringCurTypeToEnum('btc')),
+        btcusd: Currency(price: double.parse(json['btcusd'].toString()), gradDirection: stringGradDirToEnum(json['btcusdChange']), type: stringCurTypeToEnum('btcusd')),
+        eur: Currency(price: double.parse(json['eur'].toString()), gradDirection: stringGradDirToEnum(json['eurChange']), type: stringCurTypeToEnum('eur')),
+        eurusd: Currency(price:double.parse(json['eurusd'].toString()) , gradDirection: stringGradDirToEnum(json['eurusdChange']), type: stringCurTypeToEnum('eurusd')),
+        usd: Currency(price: double.parse(json['usd'].toString()), gradDirection: stringGradDirToEnum(json['usdChange']), type: stringCurTypeToEnum('usd')),
         delay: json['delay'], time: json['time']
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'brent': brent, 'brentChange': enumToString(brentChange), 'btc': btc,
-      'btcChange':enumToString(btcChange), 'btcusd': btcusd, 'btcusdChange':enumToString(btcusdChange), 'eur': eur,
-      'eurChange':enumToString(eurChange), 'eurusd': eurusd, 'eurusdChange':enumToString(eurusdChange), 'usd': usd,
-      'usdChange':enumToString(usdChange), 'delay': delay, 'time': time
+      ...brent.toJson(),
+      ...btc.toJson(),
+      ...btcusd.toJson(),
+      ...eur.toJson(),
+      ...eurusd.toJson(),
+      ...usd.toJson(),
+      'delay': delay,
+      'time': time
     };
+  }
+
+  Map<Currency_Type, num> getCurrenciesAndTheirRates() {
+    Map<Currency_Type, num> obj = {};
+    arrayOfCurrencies.forEach((element) {
+      obj[element.type] = element.price;
+    });
+    return obj;
   }
 }

@@ -1,15 +1,7 @@
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:equatable/equatable.dart';
 
-enum LocalDataEvent1 {
-  changeTheme,
-  getTheme,
-  decreaseDelay,
-  increaseDelay,
-  getDelay
-}
-
-class LocalDataEvent extends Equatable {
+abstract class LocalDataEvent extends Equatable {
   @override
   List<Object> get props => [];
 }

@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
-import 'dart:io' as io;
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:currencies_pages/bloc/currency/bloc.dart';
@@ -9,16 +9,24 @@ import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/model/currencies.dart';
+import 'package:currencies_pages/model/crypto.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../styles.dart';
 import 'config_screen.dart';
 
 double degToRad(double deg) => deg * (pi / 180.0);
 
+enum Price_Changes {
+  equal,
+  increased,
+  decreased
+}
 
 enum Statuses {
   unknown,
@@ -26,14 +34,30 @@ enum Statuses {
   offline
 }
 
+Map<Currency_Type, String> currencyTypeMapper = {
+  Currency_Type.btc: 'Биткоин',
+  Currency_Type.eurusd: 'Евро/Доллар',
+  Currency_Type.eur: 'Евро',
+  Currency_Type.brent: 'Нефть Brent',
+  Currency_Type.usd: 'Доллар',
+  Currency_Type.btcusd: 'Биткоин/Доллар',
+};
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
+
 const double _heightForSignal = 100;
+
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  final WebSocketChannel channel = WebSocketChannel.connect(
+    Uri.parse('wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker'),
+  );
+
+  Map<Currency_Type, num> previousCurrencies = {};
   late String succeedTime = '';
   Statuses lastStatus = Statuses.online;
   double _signalHeight = _heightForSignal;
@@ -42,7 +66,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   double yScrollPosition = 0;
   bool dropped = false;
 
-  double topLoaderHeight = 0.001;
+  final ValueNotifier<double> _topLoaderHeight = ValueNotifier<double>(0);
+
   int carouselPageIndex = 0;
   late Currencies? currencies;
   Tween<double> _rotationTween = Tween(begin: 360, end: 0);
@@ -57,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if(_scrollController.position.pixels <= 0 && !dropped) {
         yScrollPosition = - _scrollController.position.pixels;
       }
-
     });
     controller = AnimationController(
       vsync: this,
@@ -98,25 +122,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     BlocProvider.value(
                       value: BlocProvider.of<LocalDataBloc>(context),
                       child: ConfigScreen(),
-                    )));
+                    )
+                ));
                 context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
                 controller.duration = Duration(milliseconds: (delay1 * 1000).toInt());
                 controller.value = 0;
                 // controller.forward();
               },
             )
-          ],),
+          ],
+        ),
         body: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onVerticalDragUpdate: (d) {
-              if(topLoaderHeight + d.delta.dy > 0) {
-                setState(() {
-                  topLoaderHeight += d.delta.dy;
-                });
+              if(_topLoaderHeight.value + d.delta.dy > 0) {
+                _topLoaderHeight.value += d.delta.dy;
               }
             },
             onVerticalDragEnd: (d) {
-              if(topLoaderHeight > _signalHeight) {
+              if(_topLoaderHeight.value > _signalHeight) {
                 setState(() {
                   topLoading = true;
                 });
@@ -125,9 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 });
                 controller.stop();
               }
-              setState(() {
-                topLoaderHeight = 0;
-              });
+              _topLoaderHeight.value = 0;
             },
             child: _body()),
         // persistentFooterButtons: [RaisedButton(onPressed: () {controller.stop();})],
@@ -141,12 +163,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         padding: orientation == Orientation.landscape ? const EdgeInsets.only(right: 16.0) : EdgeInsets.zero,
         child: Column(
           children: [
+            StreamBuilder(
+              stream: channel.stream,
+              builder: (context, snapshot) {
+                if(!snapshot.hasData) {
+                  return Text('123321321321');
+                }
+                Map object = jsonDecode(snapshot.data!.toString()) as Map;
+                print(object['data']);
+                return Text('12321321');
+              },
+            ),
             topLoading
                 ? Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: CircularProgressIndicator(),
                 )
-                : SizedBox(height: topLoaderHeight,),
+                : ValueListenableBuilder<double>(
+                    builder: (context, double value, child) {
+                      return SizedBox(height: value);
+                    }, valueListenable: _topLoaderHeight,
+                  ),
             Expanded(
               child: BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
                 if(state is CurrenciesLoaded) {
@@ -176,7 +213,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               }),
             ),
       BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
-            print(state);
             if(state is CurrenciesLoaded) {
               succeedTime = state.currencies.time;
               return _footerUI(status: Statuses.online);
@@ -199,50 +235,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _bodyUI(Currencies currencies, Statuses status, Orientation orientation, BuildContext context) {
     final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
     final f = intl.NumberFormat();
-    final items = [
-      CurrencyWidget(currencyName: 'Доллар',
-        currencyPrice: f.format(currencies.usd),
-        gradDirection: currencies.usdChange,
+    final items = currencies.arrayOfCurrencies.map((currency) {
+      Color initColor = Theme.of(context).accentColor;
+      if(previousCurrencies.isNotEmpty) {
+        if(currency.price < previousCurrencies[currency.type]!) {
+          initColor = Colors.red;
+        }
+        if(currency.price > previousCurrencies[currency.type]!) {
+          initColor = Colors.blue;
+        }
+      }
+      return CurrencyWidget(
+        finalColor: Theme.of(context).accentColor,
+        initColor: initColor,
+        type: currency.type,
+        currencyName: currencyTypeMapper[currency.type]!,
+        currencyPrice: f.format(currency.price),
+        gradDirection: currency.gradDirection,
         styles: styles,
-      ),
-      CurrencyWidget(currencyName: 'Евро',
-        currencyPrice: f.format(currencies.eur),
-        gradDirection: currencies.eurChange,
-        styles: styles,
-      ),
-      CurrencyWidget(currencyName: 'Нефть Brent',
-        currencyPrice: f.format(currencies.brent),
-        gradDirection: currencies.brentChange,
-        styles: styles,
-      ),
-      CurrencyWidget(currencyName: 'Евро/Доллар',
-        currencyPrice: f.format(currencies.eurusd),
-        gradDirection: currencies.eurusdChange,
-        styles: styles,
-      ),
-      CurrencyWidget(currencyName: 'Биткоин/Рубль',
-        currencyPrice: f.format(currencies.btc),
-        gradDirection: currencies.btcChange,
-        styles: styles,
-      ),
-      CurrencyWidget(currencyName: 'Биткоин/Доллар',
-        currencyPrice: f.format(currencies.btcusd),
-        gradDirection: currencies.btcusdChange,
-        styles: styles,
-      ),
-      if(io.Platform.isAndroid)
-      CurrencyWidget(currencyName: 'Биткоин/Доллар',
-        currencyPrice: f.format(currencies.btcusd),
-        gradDirection: currencies.btcusdChange,
-        styles: styles,
-      ),
-      if(io.Platform.isAndroid)
-        CurrencyWidget(currencyName: 'Биткоин/Доллар',
-        currencyPrice: f.format(currencies.btcusd),
-        gradDirection: currencies.btcusdChange,
-        styles: styles,
-      ),
-    ];
+      );
+    }).toList();
+
+    previousCurrencies = currencies.getCurrenciesAndTheirRates();
+
     if(topLoading) {
       Future.delayed(Duration(seconds: 1), () async {
         setState(() {
@@ -251,63 +266,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         controller.reset();
       });
     }
+
     if(orientation == Orientation.portrait) {
-      return _portraitUI(currencies: currencies, items: items);
+      return _notifListener(child: _portraitUI(currencies: currencies, items: items));
     }
     if(orientation == Orientation.landscape) {
-      return _landscapeUI(currencies: currencies, context: context, items: items);
+      return _notifListener(child: _landscapeUI(currencies: currencies, context: context, items: items));
     }
     return Container();
   }
-  Widget _landscapeUI({required Currencies currencies, required BuildContext context, required List<Widget> items}) {
-    print(MediaQuery.of(context).size.height);
-    print(MediaQuery.of(context).size.width);
-    return Wrap(
-      children: [
-        SizedBox(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height / 1.25,
-          child: CarouselSlider(
-              items: items,
-              options: CarouselOptions(initialPage: carouselPageIndex, onPageChanged: (idx, _) {carouselPageIndex = idx;})
-          ),
-        )
-      ],
-    );
-  }
-  Widget _portraitUI({required Currencies currencies, required List<Widget> items}) {
-    return NotificationListener(
 
-      onNotification: (scrollNotification) {
-        if(scrollNotification is ScrollEndNotification) {
-          dropped = false;
-        }
-        if(scrollNotification is ScrollUpdateNotification) {
-          if(scrollNotification.dragDetails == null) {
-            if(_scrollController.position.pixels < 0 && scrollNotification.scrollDelta! > 0) {
-              dropped = true;
-            }
-            if(yScrollPosition > _signalHeight) {
-              yScrollPosition = 0;
-              setState(() {
-                topLoading = true;
-              });
-              Future.delayed(Duration(seconds: 1), () async {
-                context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
-              });
-              controller.stop();
-            }
+  NotificationListener _notifListener({required Widget child}) {
+    return NotificationListener(
+        onNotification: (scrollNotification) {
+      if(scrollNotification is ScrollEndNotification) {
+        dropped = false;
+      }
+      if(scrollNotification is ScrollUpdateNotification) {
+        if(scrollNotification.dragDetails == null) {
+          if(_scrollController.position.pixels < 0 && scrollNotification.scrollDelta! > 0) {
+            dropped = true;
+          }
+          if(yScrollPosition > _signalHeight) {
+            yScrollPosition = 0;
+            setState(() {
+              topLoading = true;
+            });
+            Future.delayed(Duration(seconds: 1), () async {
+              context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+            });
+            controller.stop();
           }
         }
-        return false;
-      },
+      }
+      return false;
+    },
       child: SingleChildScrollView(
         controller: _scrollController,
         physics: BouncingScrollPhysics(),
-        child: Column(
-          children: items,
-        ),
+        child: child
       ),
+    );
+  }
+
+  Widget _landscapeUI({required Currencies currencies, required BuildContext context, required List<Widget> items}) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width,
+      height: MediaQuery.of(context).size.height / 1.25,
+      child: CarouselSlider(
+          items: items,
+          options: CarouselOptions(initialPage: carouselPageIndex, onPageChanged: (idx, _) {carouselPageIndex = idx;})
+      ),
+    );
+  }
+  Widget _portraitUI({required Currencies currencies, required List<Widget> items}) {
+    return Column(
+      children: items,
     );
   }
 
@@ -319,7 +333,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     } else {
       status1 = lastStatus;
     }
-
     return ClipRect(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -336,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
             AnimatedBuilder(
               animation: animation,
-              builder: (_,snapshot) {
+              builder: (_, snapshot) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 16.0, bottom: 12),
                   child: CustomPaint(
@@ -452,36 +465,96 @@ class Painter extends CustomPainter {
   }
 }
 
-class CurrencyWidget extends StatelessWidget {
+class CurrencyWidget extends StatefulWidget {
   final String currencyName;
   final String currencyPrice;
   final Grad_Direction gradDirection;
   final CurrencyStyles styles;
-  const CurrencyWidget({Key? key,
-    required this.currencyName, required this.currencyPrice,
-    required this.gradDirection, required this.styles}) : super(key: key);
+  final Currency_Type type;
+  final Color initColor;
+  final Color finalColor;
+  CurrencyWidget({Key? key,
+    required this.finalColor,
+    required this.type, required this.currencyName,
+    required this.currencyPrice, required this.gradDirection,
+    required this.styles, required this.initColor}) : super(key: key);
+
+  @override
+  State<CurrencyWidget> createState() => _CurrencyWidgetState();
+}
+
+class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
+  late Animation<Color?> animationColor;
+  late AnimationController controller;
+
+  @override
+  void initState() {
+    controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 2000),);
+
+    animationColor = ColorTween(begin: widget.initColor, end: widget.finalColor)
+        .animate(controller);
+
+    super.initState();
+  }
+  @override
+  void dispose() {
+    // controller.dispose();
+    super.dispose();
+  }
+  @override
+  void didUpdateWidget(oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // if (oldWidget.initColor != widget.initColor || oldWidget.currencyPrice != widget.currencyPrice) {
+      this.updateAnimation();
+    // }
+  }
+  void updateAnimation() {
+    setState(() {
+      animationColor = ColorTween(begin: widget.initColor, end: widget.finalColor)
+          .animate(controller);
+    });
+
+    if(controller.status == AnimationStatus.completed || controller.status == AnimationStatus.dismissed ||
+      controller.status == AnimationStatus.forward
+    ) {
+      controller.value = 0;
+      controller.forward();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final animatedBuilder = AnimatedBuilder(
+        animation: animationColor,
+        builder: (_, snapshot) {
+          return Text(
+              widget.currencyPrice.toString(),
+              style: TextStyle(
+                  color: animationColor.value,
+                  fontSize: widget.styles.currencyPriceFontSize()));
+        });
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
 
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
-          child: Text(currencyName, style: TextStyle(fontSize: styles.currencyNameFontSize(), color: styles.currencyNameFontColor()),),
+          child: Text(widget.currencyName, style: TextStyle(fontSize: widget.styles.currencyNameFontSize(), color: widget.styles.currencyNameFontColor()),),
         ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(currencyPrice.toString(), style: TextStyle(fontSize: styles.currencyPriceFontSize()),),
-            gradDirection == Grad_Direction.down
-                ? Icon(Icons.arrow_drop_down_outlined, size: styles.iconsSize(),)
-                : Icon(Icons.arrow_drop_up_outlined, size: styles.iconsSize(),)
+            animatedBuilder,
+            widget.gradDirection == Grad_Direction.down
+                ? Icon(Icons.arrow_drop_down_outlined, size: widget.styles.iconsSize(),)
+                : Icon(Icons.arrow_drop_up_outlined, size: widget.styles.iconsSize(),)
           ],
         ),
       ],
     );
   }
+
 }
