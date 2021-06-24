@@ -57,6 +57,8 @@ enum Currency_Type {
   eur,
   eurusd,
   usd,
+  eth,
+  doge
 }
 
 class Currency {
