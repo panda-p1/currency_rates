@@ -9,6 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 
+import 'bloc/crypto/bloc.dart';
+
 void main() {
   runApp(BlocProvider(
       create: (BuildContext context) => LocalDataBloc.getInstance(),
@@ -47,6 +49,7 @@ class _MyAppState extends State<MyApp> {
           providers: [
             BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
             BlocProvider(create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),),
+            BlocProvider(create: (BuildContext context) => CryptoBloc(),),
           ],
           child: HomeScreen(),)
       );

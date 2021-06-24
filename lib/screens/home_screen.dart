@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:currencies_pages/bloc/crypto/bloc.dart';
+import 'package:currencies_pages/bloc/crypto/events.dart';
+import 'package:currencies_pages/bloc/crypto/states.dart';
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 import 'package:currencies_pages/bloc/currency/events.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
@@ -50,15 +53,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 const double _heightForSignal = 100;
-WebSocketChannel btcChannel = WebSocketChannel.connect(
-  Uri.parse('wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker'),
-);
-WebSocketChannel dogeChannel = WebSocketChannel.connect(
-  Uri.parse('wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker'),
-);
-WebSocketChannel ethChannel = WebSocketChannel.connect(
-  Uri.parse('wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker'),
-);
+
+// WebSocketChannel dogeChannel = WebSocketChannel.connect(
+//   Uri.parse('wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker'),
+// );
+
+class StreamWidgetBuilder {
+  Widget? widget;
+  void init() {
+    widget = Container();
+  }
+  void addStreamBuilder() {
+
+  }
+}
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
@@ -75,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   int carouselPageIndex = 0;
   int cryptoPageIndex = 0;
+  CarouselController landscapeCarouselController = CarouselController();
   late Currencies? currencies;
   Tween<double> _rotationTween = Tween(begin: 360, end: 0);
   late Animation<double> animation;
@@ -84,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     _loadRates();
+    _initCryptoWebSocket();
     _scrollController.addListener(() {
       if(_scrollController.position.pixels <= 0 && !dropped) {
         yScrollPosition = - _scrollController.position.pixels;
@@ -111,6 +121,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   _loadRates() {
     context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+  }
+
+  _initCryptoWebSocket() {
+    context.read<CryptoBloc>().add(CryptoInitConnection());
   }
 
   @override
@@ -219,158 +233,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final f = intl.NumberFormat();
     Color initColor = Theme.of(context).accentColor;
     final items = currencies.arrayOfCurrencies.map((currency) {
-      if(currency.type == Currency_Type.btcusd) {
-        final btc = CryptoWidget(cryptoType: Currency_Type.btc, styles: styles,);
-        final eth = CryptoWidget(cryptoType: Currency_Type.eth, styles: styles,);
-        final doge = CryptoWidget(cryptoType: Currency_Type.doge, styles: styles,);
-      // final firstSB = StreamBuilder(
-        //     stream: btcChannel.stream,
-        //     builder: (context, snapshot1) {
-        //       if (!snapshot1.hasData) {
-        //         return _cryptoLoader(styles);
-        //       }
-        //       Map btc = jsonDecode(snapshot1.data!.toString()) as Map;
-        //       return CurrencyWidget(
-        //         animated: false,
-        //         initColor: Theme.of(context).accentColor,
-        //         type: Currency_Type.btc,
-        //         currencyName: 'Btc',
-        //         currencyPrice: _getCryptoPrice(btc),
-        //         styles: styles,
-        //       );
-        //     }
-        // );
-        // final secondSB = StreamBuilder(
-        //     stream: ethChannel.stream,
-        //     builder: (context, snapshot2) {
-        //       if (!snapshot2.hasData) {
-        //         return _cryptoLoader(styles);
-        //       }
-        //       Map eth = jsonDecode(snapshot2.data!.toString()) as Map;
-        //       return CurrencyWidget(
-        //         animated: false,
-        //         initColor: Theme.of(context).accentColor,
-        //         type: Currency_Type.eth,
-        //         currencyName: 'Eth',
-        //         currencyPrice: _getCryptoPrice(eth),
-        //         styles: styles,
-        //       );
-        //     });
-        // final thirdSB = StreamBuilder(
-        //     stream: dogeChannel.stream,
-        //     builder: (context, snapshot) {
-        //       if (!snapshot.hasData) {
-        //         return _cryptoLoader(styles);
-        //       }
-        //       Map doge = jsonDecode(snapshot.data!.toString()) as Map;
-        //       return CurrencyWidget(
-        //         animated: false,
-        //         initColor: Theme.of(context).accentColor,
-        //         type: Currency_Type.doge,
-        //         currencyName: 'Doge',
-        //         currencyPrice: _getCryptoPrice(doge),
-        //         styles: styles,
-        //       );
-        //     });
-        final crypto = [
-          btc,
-          eth,
-          doge,
-        ];
-        if(orientation == Orientation.portrait) {
+      if(currency.type == Currency_Type.btc) {
+        return BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
+          print(state);
+          if(state is CryptoLoaded) {
+            final items = state.cryptoInfo.map((stream) {
+              return StreamBuilder(
+                  stream: stream,
+                  builder: (_, snapshot1)
+                  {
+                    if (!snapshot1.hasData) {
+                      return Container();
+                    }
+                    final crypto = jsonDecode(snapshot1.data!.toString())['data'];
+                    return CurrencyWidget(
+                      currencyName: crypto['s'],
+                      styles: orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles(),
+                      currencyPrice: crypto['b'].substring(0, 9),
+                      animated: false,
+                      initColor: Theme.of(context).accentColor,
+                    );
+                  });
+            }).toList();
 
-          return CarouselSlider(
-              items: crypto,
-              options: CarouselOptions(
+            if(orientation == Orientation.portrait) {
+              return CarouselSlider(
+                items: items,
+                options: CarouselOptions(),
+              );
+            }
+            if(orientation == Orientation.landscape) {
+              return SingleChildScrollView(
+                physics: BouncingScrollPhysics(),
+                child: Column(
+                  children: items,
+                ),
+              );
+            }
 
-              ));
-        }
-        if(orientation == Orientation.landscape) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: SingleChildScrollView(
-              physics: BouncingScrollPhysics(),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: crypto,
-              ),
-            ),
-          );
-        }
-        // return StreamBuilder(
-        //   stream: btcChannel.stream,
-        //   builder: (context, snapshot1) {
-        //     if(!snapshot1.hasData) {
-        //       return _cryptoLoader(styles);
-        //     }
-        //     Map btc = jsonDecode(snapshot1.data!.toString()) as Map;
-        //     return StreamBuilder(
-        //       stream: ethChannel.stream,
-        //       builder: (context, snapshot2) {
-        //         if(!snapshot2.hasData) {
-        //           return _cryptoLoader(styles);
-        //         }
-        //         Map eth = jsonDecode(snapshot2.data!.toString()) as Map;
-        //         return StreamBuilder(
-        //             stream: dogeChannel.stream,
-        //             builder: (context, snapshot3) {
-        //               if(!snapshot3.hasData) {
-        //                 return _cryptoLoader(styles);
-        //               }
-        //
-        //               Map doge = jsonDecode(snapshot3.data!.toString()) as Map;
-        //               final cryptoItems = [
-        //                 CurrencyWidget(
-        //                   animated: false,
-        //                   initColor: Theme.of(context).accentColor,
-        //                   type: Currency_Type.btc,
-        //                   currencyName: 'Btc',
-        //                   currencyPrice: _getCryptoPrice(btc),
-        //                   styles: styles,
-        //                 ),
-        //                 CurrencyWidget(
-        //                   animated: false,
-        //                   initColor: Theme.of(context).accentColor,
-        //                   type: Currency_Type.eth,
-        //                   currencyName: 'Eth',
-        //                   currencyPrice: _getCryptoPrice(eth),
-        //                   styles: styles,
-        //                 ),
-        //                 CurrencyWidget(
-        //                   animated: false,
-        //                   initColor: Theme.of(context).accentColor,
-        //                   type: Currency_Type.doge,
-        //                   currencyName: 'Doge',
-        //                   currencyPrice: _getCryptoPrice(doge),
-        //                   styles: styles,
-        //                 )
-        //               ];
-        //               if(orientation == Orientation.portrait) {
-        //                 return CarouselSlider(
-        //                       items: cryptoItems,
-        //                       options: CarouselOptions(
-        //                         enableInfiniteScroll: true,
-        //                     ));
-        //               }
-        //               if(orientation == Orientation.landscape) {
-        //                 return Padding(
-        //                   padding: const EdgeInsets.symmetric(vertical: 16.0),
-        //                   child: SingleChildScrollView(
-        //                     physics: BouncingScrollPhysics(),
-        //                     child: Column(
-        //                       mainAxisAlignment: MainAxisAlignment.center,
-        //                       crossAxisAlignment: CrossAxisAlignment.center,
-        //                       children: cryptoItems,
-        //                     ),
-        //                   ),
-        //                 );
-        //               }
-        //               return Container();
-        //             });
-        //       });
-        //   },
-        // );
+            print(state.cryptoInfo[0]);
+          }
+          return Center(child: CircularProgressIndicator());
+        });
       }
       if(previousCurrencies.isNotEmpty) {
         if(currency.price < previousCurrencies[currency.type]!) {
@@ -384,7 +288,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         animated: true,
         finalColor: Theme.of(context).accentColor,
         initColor: initColor,
-        type: currency.type,
         currencyName: currencyTypeMapper[currency.type]!,
         currencyPrice: f.format(currency.price),
         gradDirection: currency.gradDirection,
@@ -402,12 +305,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         controller.reset();
       });
     }
-
     if(orientation == Orientation.portrait) {
       return _notifListener(child: _portraitUI(currencies: currencies, items: items));
     }
     if(orientation == Orientation.landscape) {
-      return _notifListener(child: _landscapeUI(currencies: currencies, context: context, items: items));
+      return _landscapeUI(currencies: currencies, context: context, items: items);
     }
     return Container();
   }
@@ -426,9 +328,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _landscapeUI({required Currencies currencies, required BuildContext context, required List<Widget> items}) {
     return SizedBox(
       width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height / 1.25,
+      // height: MediaQuery.of(context).size.height / 1.25,
       child: CarouselSlider(
-          items: items,
+          carouselController: landscapeCarouselController,
+          items: items.map((e) {
+            return Wrap(
+                crossAxisAlignment: WrapCrossAlignment.end,
+                children:[e]);
+          }).toList(),
           options: CarouselOptions(initialPage: carouselPageIndex, onPageChanged: (idx, _) {carouselPageIndex = idx;})
       ),
     );
@@ -522,9 +429,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
   @override
   void dispose() {
-    btcChannel.sink.close();
-    ethChannel.sink.close();
-    dogeChannel.sink.close();
     super.dispose();
   }
 }
@@ -649,67 +553,17 @@ class CurrencyWidget extends StatefulWidget {
   final String currencyPrice;
   final Grad_Direction? gradDirection;
   final CurrencyStyles styles;
-  final Currency_Type type;
   final Color initColor;
   final Color? finalColor;
   final bool animated;
   CurrencyWidget({Key? key,
     this.finalColor, required this.animated,
-    required this.type, required this.currencyName,
+    required this.currencyName,
     required this.currencyPrice, this.gradDirection,
     required this.styles, required this.initColor}) : super(key: key);
 
   @override
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
-}
-
-class CryptoWidget extends StatefulWidget {
-  final Currency_Type cryptoType;
-  final CurrencyStyles styles;
-  CryptoWidget({required this.cryptoType, required this.styles});
-  @override
-  State<CryptoWidget> createState() => _CryptoWidgetState();
-}
-
-class _CryptoWidgetState extends State<CryptoWidget> {
-  late final StreamController<String> controller;
-  @override
-  void initState() {
-    super.initState();
-    if(widget.cryptoType == Currency_Type.btc) {
-      controller = NotificationController(wsUrl: 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker').streamController;
-    }
-    if(widget.cryptoType == Currency_Type.eth) {
-      controller = NotificationController(wsUrl: 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker').streamController;
-    }
-    if(widget.cryptoType == Currency_Type.doge) {
-      controller = NotificationController(wsUrl: 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker').streamController;
-    }
-  }
-  @override
-  Widget build(BuildContext context) {
-        return StreamBuilder(
-          stream: controller.stream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return _cryptoLoader(widget.cryptoType.toString().substring(widget.cryptoType.toString().indexOf('.') + 1), widget.styles);
-            }
-            Map crypto = jsonDecode(snapshot.data!.toString()) as Map;
-            return CurrencyWidget(
-              animated: false,
-              initColor: Theme.of(context).accentColor,
-              type: widget.cryptoType,
-              currencyName: widget.cryptoType.toString().substring(widget.cryptoType.toString().indexOf('.') + 1),
-              currencyPrice: _getCryptoPrice(crypto),
-              styles: widget.styles,
-            );
-          });
-  }
-  @override
-  dispose() {
-    controller.close();
-    super.dispose();
-  }
 }
 
 class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
@@ -742,8 +596,6 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     if(widget.animated) {
       this.updateAnimation();
     }
-    // if (oldWidget.initColor != widget.initColor || oldWidget.currencyPrice != widget.currencyPrice) {
-    // }
   }
 
   void updateAnimation() {
@@ -783,7 +635,6 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0),

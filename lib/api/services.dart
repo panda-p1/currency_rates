@@ -2,10 +2,82 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'dart:async' show Future;
+import 'dart:async' show Future, StreamController;
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'dart:io';
+enum Crypto_Type {
+  btc,
+  eth,
+  doge
+}
+class NotificationController {
+
+  static NotificationController? _singleton;
+
+  List<StreamController<String>> streamControllers =
+  [
+    StreamController.broadcast(sync: true),
+    StreamController.broadcast(sync: true),
+    StreamController.broadcast(sync: true)
+  ];
+
+  String btcUrl = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker';
+  String ethUrl = 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker';
+  String dogeUrl = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker';
+
+  List<String> urls = [
+    'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker',
+    'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker',
+    'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker'
+  ];
+
+  List<WebSocket?> channels = [];
+
+  static NotificationController getInstance() {
+    if(_singleton == null) {
+      _singleton = NotificationController();
+    }
+    return _singleton!;
+  }
+
+  initWebSocketConnection() async {
+    print("conecting...");
+    channels = await connectWs();
+    print("socket connection initializied");
+    channels.forEach((element) {
+      element!.done.then((dynamic _) => _onDisconnected());
+    });
+    broadcastNotifications();
+  }
+
+  broadcastNotifications() {
+    for(var i = 0; i < channels.length; i ++) {
+      channels[i]!.listen((streamData) {
+        streamControllers[i].add(streamData);
+      });
+    }
+  }
+
+  Future<List<WebSocket>> connectWs() async{
+    try {
+      return await Future.wait(urls.map((e) => WebSocket.connect(e)));
+    } catch  (e) {
+      print("Error! can not connect WS connectWs " + e.toString());
+      await Future.delayed(Duration(milliseconds: 10000));
+      return await connectWs();
+    }
+
+  }
+
+  void _onDisconnected() {
+    // initWebSocketConnection();
+  }
+}
+
+
 
 final darkTheme = ThemeData(
   primarySwatch: Colors.grey,
