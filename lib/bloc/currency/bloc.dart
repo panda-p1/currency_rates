@@ -19,14 +19,16 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
           yield CurrenciesLoaded(currencies: currencies);
         } on TimeoutException {
           try {
+            print('timeout exception');
             final currencies = await LocalDataProvider().getLocalCurrencies();
             yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {
             print(e);
             yield LocalCurrenciesError();
           }
-        } on SocketException {
+        } on HttpException {
           try {
+            print('timeout exception');
             final currencies = await LocalDataProvider().getLocalCurrencies();
             yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {

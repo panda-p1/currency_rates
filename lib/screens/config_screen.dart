@@ -6,6 +6,8 @@ import 'package:currencies_pages/bloc/localData/states.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+import 'dart:io';
 
 import '../styles.dart';
 
@@ -119,3 +121,51 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 }
 
+
+class NotificationController {
+
+  StreamController<String> streamController = StreamController.broadcast(sync: true);
+  final String wsUrl;
+
+  WebSocket? channel;
+
+  NotificationController({required this.wsUrl}) {
+    initWebSocketConnection();
+  }
+
+  initWebSocketConnection() async {
+    print("conecting...");
+    this.channel = await connectWs();
+    print("socket connection initializied");
+    this.channel!.done.then((dynamic _) => _onDisconnected());
+    broadcastNotifications();
+  }
+
+  broadcastNotifications() {
+    this.channel!.listen((streamData) {
+      if(!streamController.isClosed) {
+        streamController.add(streamData);
+      }
+    }, onDone: () {
+      print("conecting aborted");
+      initWebSocketConnection();
+    }, onError: (e) {
+      print('Server error: $e');
+      initWebSocketConnection();
+    });
+  }
+
+  connectWs() async{
+    try {
+      return await WebSocket.connect(wsUrl).timeout(Duration(seconds: 5));
+    } catch  (e) {
+      print("Error! can not connect WS connectWs " + e.toString());
+      await Future.delayed(Duration(milliseconds: 10000));
+      return await connectWs();
+    }
+  }
+
+  void _onDisconnected() {
+    initWebSocketConnection();
+  }
+}
