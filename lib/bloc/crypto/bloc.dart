@@ -14,10 +14,19 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   Stream<CryptoState> mapEventToState(event) async* {
     yield CryptoLoading();
     if(event is CryptoInitConnection) {
-      await NotificationController.getInstance().initWebSocketConnection();
-      final controllers = NotificationController.getInstance().streamControllers;
-      // print(controllers);
-      yield CryptoLoaded(cryptoInfo: controllers.map((e) => e.stream).toList());
+      try {
+        await NotificationController.getInstance().initWebSocketConnection();
+        final controllers = NotificationController.getInstance().streamControllers;
+        // print(controllers);
+        yield CryptoLoaded(cryptoInfo: controllers);
+      } catch(e) {
+        print(e);
+        print('crypto error caught');
+        yield CryptoError();
+      }
+    }
+    if(event is CryptoRetryConnect) {
+
     }
   }
 

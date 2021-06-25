@@ -47,9 +47,9 @@ class NotificationController {
     print("conecting...");
     channels = await connectWs();
     print("socket connection initializied");
-    channels.forEach((element) {
-      element!.done.then((dynamic _) => _onDisconnected());
-    });
+    // channels.forEach((element) {
+    //   element!.done.then((dynamic _) => _onDisconnected());
+    // });
     broadcastNotifications();
   }
 
@@ -62,14 +62,7 @@ class NotificationController {
   }
 
   Future<List<WebSocket>> connectWs() async{
-    try {
-      return await Future.wait(urls.map((e) => WebSocket.connect(e)));
-    } catch  (e) {
-      print("Error! can not connect WS connectWs " + e.toString());
-      await Future.delayed(Duration(milliseconds: 10000));
-      return await connectWs();
-    }
-
+    return await Future.wait(urls.map((e) => WebSocket.connect(e)));
   }
 
   void _onDisconnected() {

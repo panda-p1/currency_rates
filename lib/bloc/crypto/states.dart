@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 
 abstract class CryptoState extends Equatable {
@@ -17,8 +19,14 @@ class CryptoLoading extends CryptoState {
   List<Object> get props => [];
 }
 
+class CryptoError extends CryptoState {
+  CryptoError();
+  @override
+  List<Object> get props => [];
+}
+
 class CryptoLoaded extends CryptoState {
-  final List<Stream> cryptoInfo;
+  final List<StreamController> cryptoInfo;
   CryptoLoaded({required this.cryptoInfo});
   @override
   List<Object> get props => [];
