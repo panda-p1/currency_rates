@@ -29,6 +29,7 @@ dependencies:
   percent_indicator: ^3.0.1
   shared_preferences: ^2.0.6
   carousel_slider: ^4.0.0
+#  flutter_swiper_null_safety: ^1.0.2
   intl: ^0.17.0
   web_socket_channel: ^2.1.0
   socket_io_client: ^2.0.0-beta.4-nullsafety.0

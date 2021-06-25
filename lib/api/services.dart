@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'dart:async' show Future, StreamController;
 import 'package:currencies_pages/model/currencies.dart';
+import 'package:currencies_pages/model/crypto.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,26 +14,18 @@ enum Crypto_Type {
   eth,
   doge
 }
+const btcUrl = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker';
+const ethUrl = 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker';
+const dogeUrl = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker';
+const btcRubUrl = 'wss://stream.binance.com:9443/stream?streams=btcrub@bookTicker';
+
+List<String> urls = [btcUrl,ethUrl,dogeUrl,btcRubUrl];
+
 class NotificationController {
 
   static NotificationController? _singleton;
 
-  List<StreamController<String>> streamControllers =
-  [
-    StreamController.broadcast(sync: true),
-    StreamController.broadcast(sync: true),
-    StreamController.broadcast(sync: true)
-  ];
-
-  String btcUrl = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker';
-  String ethUrl = 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker';
-  String dogeUrl = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker';
-
-  List<String> urls = [
-    'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker',
-    'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker',
-    'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker'
-  ];
+  List<StreamController> streamControllers = urls.map((e) => StreamController.broadcast(sync: true)).toList();
 
   List<WebSocket?> channels = [];
 
@@ -115,11 +108,49 @@ abstract class LocalDataRepo {
   Future<ThemeData> getTheme();
   Future<double> changeDelay(String dir);
   Future<double> getDelay();
-  Future<Null> storeCurrencies(Currencies currencies);
   Future<Currencies> getLocalCurrencies();
+  Future<Null> storeCurrencies(Currencies currencies);
+  Future<Null> storeCrypto(Crypto crypto);
+  Future<List<Crypto>> getLocalCrypto();
 }
 
 class LocalDataProvider implements LocalDataRepo {
+  @override
+  Future<List<Crypto>> getLocalCrypto() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonCrypto = jsonDecode(prefs.getString('crypto')!) as List;
+    final cryptoList = jsonCrypto.map((e) => Crypto.fromJson(e)).toList();
+    return cryptoList;
+  }
+
+  @override
+  Future<Null> storeCrypto(Crypto crypto) async {
+    final prefs = await SharedPreferences.getInstance();
+    // prefs.setString('crypto', jsonEncode([]));
+
+    if(prefs.getString('crypto') == null) {
+      prefs.setString('crypto', jsonEncode([crypto]));
+    }
+    final jsonCrypto = jsonDecode(prefs.getString('crypto')!) as List;
+    final cryptoList = jsonCrypto.map((e) => Crypto.fromJson(e)).toList();
+    print(cryptoList);
+    if(cryptoList.where((element) => element.name == crypto.name).length == 0) {
+      cryptoList.add(crypto);
+    } else {
+      for(var i = 0; i < cryptoList.length; i++) {
+        if(cryptoList[i].name == crypto.name) {
+          print(cryptoList[i].name);
+          cryptoList.removeAt(i);
+          cryptoList.insert(i, crypto);
+          break;
+        }
+      }
+    }
+    prefs.setString('crypto', jsonEncode(cryptoList));
+
+
+    return null;
+  }
   @override
   Future<Null> storeCurrencies(Currencies currencies) async {
     final prefs = await SharedPreferences.getInstance();

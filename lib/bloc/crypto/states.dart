@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:currencies_pages/model/crypto.dart';
 
 abstract class CryptoState extends Equatable {
   @override
@@ -29,5 +30,18 @@ class CryptoLoaded extends CryptoState {
   final List<StreamController> cryptoInfo;
   CryptoLoaded({required this.cryptoInfo});
   @override
-  List<Object> get props => [];
+  List<Object> get props => [cryptoInfo];
+}
+
+class LocalCryptoLoaded extends CryptoState {
+  final List<Crypto> cryptoList;
+  LocalCryptoLoaded({required this.cryptoList});
+  @override
+  List<Object> get props => [cryptoList];
+}
+class CryptoRetryConnection extends CryptoState {
+  final List<Crypto> cryptoList;
+  CryptoRetryConnection({required this.cryptoList});
+  @override
+  List<Object> get props => [cryptoList];
 }

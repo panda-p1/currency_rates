@@ -52,8 +52,6 @@ Currency_Type stringCurTypeToEnum(String str) {
 }
 enum Currency_Type {
   brent,
-  btc,
-  btcusd,
   eur,
   eurusd,
   usd,
@@ -75,8 +73,6 @@ class Currency {
 
 class Currencies {
   final Currency brent;
-  final Currency btc;
-  final Currency btcusd;
   final Currency eur;
   final Currency eurusd;
   final Currency usd;
@@ -84,18 +80,16 @@ class Currencies {
   final String time;
 
   Currencies({
-    required this.brent, required this.btc, required this.btcusd,
-    required this.eur, required this.eurusd, required this.usd,
+    required this.brent, required this.eur,
+    required this.eurusd, required this.usd,
     required this.delay, required this.time
   });
 
-  List<Currency> get arrayOfCurrencies => [brent, btc, btcusd, eur, eurusd, usd];
+  List<Currency> get arrayOfCurrencies => [brent, eur, eurusd, usd];
 
   factory Currencies.fromJson(json) {
     return Currencies(
         brent: Currency(price: double.parse(json['brent'].toString()), gradDirection: stringGradDirToEnum(json['brentChange']), type: stringCurTypeToEnum('brent')),
-        btc: Currency(price: double.parse(json['btc'].toString()), gradDirection: stringGradDirToEnum(json['btcChange']), type: stringCurTypeToEnum('btc')),
-        btcusd: Currency(price: double.parse(json['btcusd'].toString()), gradDirection: stringGradDirToEnum(json['btcusdChange']), type: stringCurTypeToEnum('btcusd')),
         eur: Currency(price: double.parse(json['eur'].toString()), gradDirection: stringGradDirToEnum(json['eurChange']), type: stringCurTypeToEnum('eur')),
         eurusd: Currency(price:double.parse(json['eurusd'].toString()) , gradDirection: stringGradDirToEnum(json['eurusdChange']), type: stringCurTypeToEnum('eurusd')),
         usd: Currency(price: double.parse(json['usd'].toString()), gradDirection: stringGradDirToEnum(json['usdChange']), type: stringCurTypeToEnum('usd')),
@@ -106,8 +100,6 @@ class Currencies {
   Map<String, dynamic> toJson() {
     return {
       ...brent.toJson(),
-      ...btc.toJson(),
-      ...btcusd.toJson(),
       ...eur.toJson(),
       ...eurusd.toJson(),
       ...usd.toJson(),

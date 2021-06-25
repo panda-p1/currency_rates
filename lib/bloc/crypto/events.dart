@@ -15,3 +15,14 @@ class CryptoRetryConnect extends CryptoEvent {
   @override
   List<Object> get props => [];
 }
+
+class GetLocalCrypto extends CryptoEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class RetryConnection extends CryptoEvent {
+  @override
+  List<Object> get props => [];
+}
+
