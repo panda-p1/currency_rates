@@ -26,7 +26,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
             print(e);
             yield LocalCurrenciesError();
           }
-        } on HttpException {
+        } on SocketException {
           try {
             print('timeout exception');
             final currencies = await LocalDataProvider().getLocalCurrencies();

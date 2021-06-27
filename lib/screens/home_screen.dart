@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:core';
 import 'dart:math';
 
-import 'package:carousel_slider/carousel_slider.dart';
+// import 'package:carousel_slider/carousel_slider.dart';
+import 'package:currencies_pages/api/services.dart';
 import 'package:currencies_pages/bloc/crypto/bloc.dart';
 import 'package:currencies_pages/bloc/crypto/events.dart';
 import 'package:currencies_pages/bloc/crypto/states.dart';
@@ -12,12 +14,14 @@ import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/model/currencies.dart';
+import 'package:currencies_pages/model/crypto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:multiple_stream_builder/multiple_stream_builder.dart';
 
 import '../styles.dart';
 import 'config_screen.dart';
@@ -37,12 +41,12 @@ enum Statuses {
 }
 
 Map<Currency_Type, String> currencyTypeMapper = {
-  Currency_Type.btc: 'Биткоин',
+  // Currency_Type.btc: 'Биткоин',
   Currency_Type.eurusd: 'Евро/Доллар',
   Currency_Type.eur: 'Евро',
   Currency_Type.brent: 'Нефть Brent',
   Currency_Type.usd: 'Доллар',
-  Currency_Type.btcusd: 'Биткоин/Доллар',
+  // Currency_Type.btcusd: 'Биткоин/Доллар',
 };
 
 class HomeScreen extends StatefulWidget {
@@ -70,6 +74,8 @@ class StreamWidgetBuilder {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
+  List<StreamController> cryptoControllers = [];
+
   Map<Currency_Type, num> previousCurrencies = {};
   late String succeedTime = '';
   Statuses lastStatus = Statuses.online;
@@ -80,10 +86,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool dropped = false;
 
   final ValueNotifier<double> _topLoaderHeight = ValueNotifier<double>(0);
+  final ValueNotifier<int> landscapePageIndex = ValueNotifier<int>(0);
+  final ValueNotifier<int> portraitPageIndex = ValueNotifier<int>(0);
 
-  int carouselPageIndex = 0;
-  int cryptoPageIndex = 0;
-  CarouselController landscapeCarouselController = CarouselController();
+  // CarouselController landscapeCarouselController = CarouselController();
+  // CarouselController portraitCarouselController = CarouselController();
   late Currencies? currencies;
   Tween<double> _rotationTween = Tween(begin: 360, end: 0);
   late Animation<double> animation;
@@ -147,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
                 controller.duration = Duration(milliseconds: (delay1 * 1000).toInt());
                 controller.value = 0;
-                controller.forward();
+                // controller.forward();
               },
             )
           ],
@@ -180,24 +187,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
             Expanded(
               child: BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
-                print(state);
                 if(state is CurrenciesLoaded) {
                   context.read<LocalDataBloc>().add(StoreCurrencies(currencies: state.currencies));
                   controller.duration = Duration(milliseconds: (state.currencies.delay * 1000).toInt());
                   if(controller.status == AnimationStatus.dismissed) {
-                    controller.forward();
+                    // controller.forward();
                   }
                   if(controller.status == AnimationStatus.completed) {
                     Future.delayed(Duration.zero, () async {
                       controller.value = 0;
-                      controller.forward();
+                      // controller.forward();
                     });
                   }
                   return _bodyUI(state.currencies, Statuses.online, orientation, context);
                 }
                 if(state is LocalCurrenciesLoaded) {
                   Timer(const Duration(seconds: 2), () {
-                    context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+                    _loadRates();
+                    context.read<CryptoBloc>().add(RetryConnection());
                   });
                   controller.duration = Duration(milliseconds: (state.currencies.delay * 1000).toInt());
                   return _bodyUI(state.currencies, Statuses.online, orientation, context);
@@ -232,48 +239,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     final f = intl.NumberFormat();
     Color initColor = Theme.of(context).accentColor;
-    final items = currencies.arrayOfCurrencies.map((currency) {
-      if(currency.type == Currency_Type.btc) {
+    final items = currencies.arrayOfCurrencies.asMap().entries.map((entry) {
+      final currency = entry.value;
+
+      if(entry.key == 0) {
         return BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
-          print(state);
-          if(state is CryptoLoaded) {
-            final items = state.cryptoInfo.map((stream) {
-              return StreamBuilder(
-                  stream: stream,
-                  builder: (_, snapshot1)
-                  {
-                    if (!snapshot1.hasData) {
-                      return Container();
-                    }
-                    final crypto = jsonDecode(snapshot1.data!.toString())['data'];
-                    return CurrencyWidget(
-                      currencyName: crypto['s'],
-                      styles: orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles(),
-                      currencyPrice: crypto['b'].substring(0, 9),
-                      animated: false,
-                      initColor: Theme.of(context).accentColor,
-                    );
-                  });
-            }).toList();
-
-            if(orientation == Orientation.portrait) {
-              return CarouselSlider(
-                items: items,
-                options: CarouselOptions(),
-              );
-            }
-            if(orientation == Orientation.landscape) {
-              return SingleChildScrollView(
-                physics: BouncingScrollPhysics(),
-                child: Column(
-                  children: items,
-                ),
-              );
-            }
-
-            print(state.cryptoInfo[0]);
+          if(state is CryptoError) {
+            return Container();
           }
-          return Center(child: CircularProgressIndicator());
+          if(state is LocalCryptoLoaded) {
+            return _localCryptoLoaded(state.cryptoList, orientation);
+          }
+          if(state is CryptoLoaded) {
+            return _cryptoLoaded(state.cryptoInfo, orientation);
+          }
+          return Container();
         });
       }
       if(previousCurrencies.isNotEmpty) {
@@ -305,47 +285,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         controller.reset();
       });
     }
+
     if(orientation == Orientation.portrait) {
-      return _notifListener(child: _portraitUI(currencies: currencies, items: items));
+      return _notifListener(child: _portraitUI(items: items));
     }
     if(orientation == Orientation.landscape) {
-      return _landscapeUI(currencies: currencies, context: context, items: items);
+      return _landscapeCarousel(context: context, items: items);
     }
     return Container();
   }
 
-  NotificationListener _notifListener({required Widget child}) {
-    return NotificationListener(
-      onNotification: _onScroll,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        physics: BouncingScrollPhysics(),
-        child: child
+  Widget _landscapeCarousel({ required BuildContext context, required List<Widget> items}) {
+    // return Container();
+    return  ConstrainedBox(
+      constraints:new BoxConstraints.loose(new Size(MediaQuery.of(context).size.width, 170.0)),
+      child: ValueListenableBuilder<int>(
+        builder: (_, int value, __) {
+          return Swiper(
+            pagination: new SwiperPagination(
+                builder: DotSwiperPaginationBuilder(
+                    color: Colors.grey
+                ),
+                margin: new EdgeInsets.all(10.0)
+            ),
+            itemCount: items.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Center(
+                  child: SingleChildScrollView(
+                      physics: BouncingScrollPhysics(),
+                      child: items[index]));
+            },
+          );
+        },
+        valueListenable: landscapePageIndex,
       ),
     );
   }
-
-  Widget _landscapeUI({required Currencies currencies, required BuildContext context, required List<Widget> items}) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      // height: MediaQuery.of(context).size.height / 1.25,
-      child: CarouselSlider(
-          carouselController: landscapeCarouselController,
-          items: items.map((e) {
-            return Wrap(
-                crossAxisAlignment: WrapCrossAlignment.end,
-                children:[e]);
-          }).toList(),
-          options: CarouselOptions(initialPage: carouselPageIndex, onPageChanged: (idx, _) {carouselPageIndex = idx;})
-      ),
-    );
-  }
-  Widget _portraitUI({required Currencies currencies, required List<Widget> items}) {
+  Widget _portraitUI({required List<Widget> items}) {
     return Column(
       children: items,
     );
   }
-
   Widget _footerUI({required Statuses status}) {
     final Statuses status1;
     if(status == Statuses.offline || status == Statuses.online) {
@@ -384,6 +364,132 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _portraitCarousel(List<Widget> items) {
+    return ConstrainedBox(
+        constraints:new BoxConstraints.loose(new Size(MediaQuery.of(context).size.width, 170.0)),
+        child: ValueListenableBuilder<int>(
+        builder: (_, int value, __) {
+          return Swiper(
+            pagination: new SwiperPagination(
+                builder: DotSwiperPaginationBuilder(
+                    color: Colors.grey
+                ),
+                margin: new EdgeInsets.all(10.0)
+            ),
+            itemCount: items.length,
+            itemBuilder: (BuildContext context, int index) {
+              return items[index];
+            },
+          );
+        },
+        valueListenable: portraitPageIndex,
+      ),
+    );
+  }
+
+  Widget _cryptoLoaded(cryptoInfo, Orientation orientation) {
+    if(cryptoControllers.isEmpty) {
+      cryptoControllers = cryptoInfo;
+    }
+    final i = cryptoInfo;
+    return StreamBuilder4<dynamic,dynamic,dynamic,dynamic>(
+      streams: Tuple4(i[0].stream, i[1].stream, i[2].stream, i[3].stream),
+      builder: (BuildContext context, Tuple4<AsyncSnapshot<dynamic>, AsyncSnapshot<dynamic>,
+          AsyncSnapshot<dynamic>, AsyncSnapshot<dynamic>> snapshots) {
+        final mapper = [snapshots.item1, snapshots.item2, snapshots.item3, snapshots.item4];
+        if(orientation == Orientation.landscape) {
+          return Column(
+              children: mapper.asMap().entries.map((e) {
+                final index = e.key;
+                if(!mapper[index].hasData) {
+                  return Container();
+                }
+                final crypto = jsonDecode(mapper[index].data!.toString())['data'];
+                var price = ((double.parse(crypto['b']) + double.parse(crypto['a'])) / 2).toString();
+                price = price.length > 9 ? price.substring(0, 9) : price;
+                context.read<LocalDataBloc>().add(StoreCrypto(crypto: Crypto(
+                  name: crypto['s'], price: price,
+                )));
+
+                return CurrencyWidget(
+                  animated: false,
+                  currencyPrice: price,
+                  styles: orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles(),
+                  finalColor: Theme.of(context).accentColor,
+                  currencyName: crypto['s'],
+                );
+              }).toList()
+            );
+          }
+
+        if(orientation == Orientation.portrait) {
+          return ConstrainedBox(
+              constraints:new BoxConstraints.loose(new Size(MediaQuery.of(context).size.width, 170.0)),
+              child: Swiper(
+                pagination: new SwiperPagination(
+                    builder: DotSwiperPaginationBuilder(
+                        color: Colors.grey
+                    ),
+                    margin: new EdgeInsets.all(10.0)
+                ),
+                itemCount: cryptoInfo.length,
+                itemBuilder: (BuildContext context, int index) {
+                  if(!mapper[index].hasData) {
+                    return Container();
+                  }
+                  final crypto = jsonDecode(mapper[index].data!.toString())['data'];
+                  var price = ((double.parse(crypto['b']) + double.parse(crypto['a'])) / 2).toString();
+                  price = price.length > 9 ? price.substring(0, 9) : price;
+                  context.read<LocalDataBloc>().add(StoreCrypto(crypto: Crypto(
+                    name: crypto['s'], price: price,
+                  )));
+
+                  return CurrencyWidget(
+                    animated: false,
+                    currencyPrice: price,
+                    styles: orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles(),
+                    finalColor: Theme.of(context).accentColor,
+                    currencyName: crypto['s'],
+                  );
+                },
+              ),
+            );
+        }
+        return Container();
+        },
+      );
+  }
+  Widget _localCryptoLoaded(List<Crypto> cryptoList, Orientation orientation) {
+    final items = cryptoList.map((crypto) {
+      return CurrencyWidget(
+          finalColor: Theme.of(context).accentColor,
+          animated: false,
+          currencyName: crypto.name,
+          currencyPrice: crypto.price,
+          styles: orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles());
+    }).toList();
+    if(orientation == Orientation.portrait) {
+      return _portraitCarousel(items);
+    }
+    if(orientation == Orientation.landscape) {
+      return Column(
+        children: items,
+      );
+    }
+    return Container();
+  }
+
+  NotificationListener _notifListener({required Widget child}) {
+    return NotificationListener(
+      onNotification: _onScroll,
+      child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: BouncingScrollPhysics(),
+          child: child
       ),
     );
   }
@@ -429,7 +535,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
   @override
   void dispose() {
+    cryptoControllers.forEach((element) {
+      element.close();
+    });
     super.dispose();
+
   }
 }
 
@@ -553,15 +663,14 @@ class CurrencyWidget extends StatefulWidget {
   final String currencyPrice;
   final Grad_Direction? gradDirection;
   final CurrencyStyles styles;
-  final Color initColor;
-  final Color? finalColor;
+  final Color? initColor;
+  final Color finalColor;
   final bool animated;
   CurrencyWidget({Key? key,
-    this.finalColor, required this.animated,
-    required this.currencyName,
+    required this.finalColor,
+    required this.animated, required this.currencyName,
     required this.currencyPrice, this.gradDirection,
-    required this.styles, required this.initColor}) : super(key: key);
-
+    required this.styles, this.initColor}) : super(key: key);
   @override
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
 }
@@ -629,7 +738,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       currencyPrice = Text(
           widget.currencyPrice.toString(),
           style: TextStyle(
-              color: widget.initColor,
+              color: widget.finalColor,
               fontSize: widget.styles.currencyPriceFontSize()));
     }
 

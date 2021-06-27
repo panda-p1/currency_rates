@@ -1,4 +1,5 @@
 import 'package:currencies_pages/model/currencies.dart';
+import 'package:currencies_pages/model/crypto.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class LocalDataEvent extends Equatable {
@@ -26,6 +27,13 @@ class IncreaseDelay extends LocalDataEvent {
 class GetDelay extends LocalDataEvent {
   @override
   List<Object> get props => [];
+}
+
+class StoreCrypto extends LocalDataEvent {
+  final Crypto crypto;
+  StoreCrypto({required this.crypto});
+  @override
+  List<Object> get props => [crypto];
 }
 
 class StoreCurrencies extends LocalDataEvent {
