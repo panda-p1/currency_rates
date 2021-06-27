@@ -1,5 +1,6 @@
 
 import 'package:currencies_pages/api/services.dart';
+import 'package:currencies_pages/screens/home_screen.dart';
 
 enum Grad_Direction {
   up,
@@ -72,37 +73,35 @@ class Currency {
 }
 
 class Currencies {
-  final Currency brent;
-  final Currency eur;
-  final Currency eurusd;
-  final Currency usd;
+  // final Currency eur;
+  // final Currency eurusd;
+  // final Currency usd;
   final double delay;
   final String time;
 
   Currencies({
-    required this.brent, required this.eur,
-    required this.eurusd, required this.usd,
+  //   required this.eur,
+  //   required this.eurusd, required this.usd,
     required this.delay, required this.time
   });
 
-  List<Currency> get arrayOfCurrencies => [brent, eur, eurusd, usd];
+  // List<dynamic> get arrayOfCurrencies => ['crypto reserved place', eur, eurusd, usd];
+  List<dynamic> get arrayOfCurrencies => ['crypto reserved place'];
 
   factory Currencies.fromJson(json) {
     return Currencies(
-        brent: Currency(price: double.parse(json['brent'].toString()), gradDirection: stringGradDirToEnum(json['brentChange']), type: stringCurTypeToEnum('brent')),
-        eur: Currency(price: double.parse(json['eur'].toString()), gradDirection: stringGradDirToEnum(json['eurChange']), type: stringCurTypeToEnum('eur')),
-        eurusd: Currency(price:double.parse(json['eurusd'].toString()) , gradDirection: stringGradDirToEnum(json['eurusdChange']), type: stringCurTypeToEnum('eurusd')),
-        usd: Currency(price: double.parse(json['usd'].toString()), gradDirection: stringGradDirToEnum(json['usdChange']), type: stringCurTypeToEnum('usd')),
+        // eur: Currency(price: double.parse(json['eur'].toString()), gradDirection: stringGradDirToEnum(json['eurChange']), type: stringCurTypeToEnum('eur')),
+        // eurusd: Currency(price:double.parse(json['eurusd'].toString()) , gradDirection: stringGradDirToEnum(json['eurusdChange']), type: stringCurTypeToEnum('eurusd')),
+        // usd: Currency(price: double.parse(json['usd'].toString()), gradDirection: stringGradDirToEnum(json['usdChange']), type: stringCurTypeToEnum('usd')),
         delay: json['delay'], time: json['time']
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      ...brent.toJson(),
-      ...eur.toJson(),
-      ...eurusd.toJson(),
-      ...usd.toJson(),
+      // ...eur.toJson(),
+      // ...eurusd.toJson(),
+      // ...usd.toJson(),
       'delay': delay,
       'time': time
     };
@@ -110,7 +109,7 @@ class Currencies {
 
   Map<Currency_Type, num> getCurrenciesAndTheirRates() {
     Map<Currency_Type, num> obj = {};
-    arrayOfCurrencies.forEach((element) {
+    arrayOfCurrencies.skip(1).forEach((element) {
       obj[element.type] = element.price;
     });
     return obj;

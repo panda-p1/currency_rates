@@ -18,8 +18,9 @@ const btcUrl = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker'
 const ethUrl = 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker';
 const dogeUrl = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker';
 const btcRubUrl = 'wss://stream.binance.com:9443/stream?streams=btcrub@bookTicker';
+const btcEurUrl = 'wss://stream.binance.com:9443/stream?streams=btceur@bookTicker';
 
-List<String> urls = [btcUrl,ethUrl,dogeUrl,btcRubUrl];
+List<String> urls = [btcUrl,ethUrl,dogeUrl,btcRubUrl,btcEurUrl];
 
 class NotificationController {
 
@@ -133,13 +134,11 @@ class LocalDataProvider implements LocalDataRepo {
     }
     final jsonCrypto = jsonDecode(prefs.getString('crypto')!) as List;
     final cryptoList = jsonCrypto.map((e) => Crypto.fromJson(e)).toList();
-    print(cryptoList);
     if(cryptoList.where((element) => element.name == crypto.name).length == 0) {
       cryptoList.add(crypto);
     } else {
       for(var i = 0; i < cryptoList.length; i++) {
         if(cryptoList[i].name == crypto.name) {
-          print(cryptoList[i].name);
           cryptoList.removeAt(i);
           cryptoList.insert(i, crypto);
           break;

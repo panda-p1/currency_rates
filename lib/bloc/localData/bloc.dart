@@ -9,10 +9,8 @@ class LocalDataBloc extends Bloc<LocalDataEvent, LocalDataState> {
   static LocalDataBloc? _instance;
   static LocalDataBloc getInstance() {
     if(LocalDataBloc._instance == null) {
-      print('_instance has not been created');
       LocalDataBloc._instance = LocalDataBloc(localDataRepo: LocalDataProvider());
     } else {
-      print('_instatnce already created');
     }
     return LocalDataBloc._instance!;
   }
