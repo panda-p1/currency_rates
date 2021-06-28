@@ -35,11 +35,13 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       final cryptoList = await LocalDataProvider().getLocalCrypto();
       yield LocalCryptoLoaded(cryptoList: cryptoList);
     }
+    if(event is CryptoCloseAllConnections) {
+      NotificationController.getInstance().closeAllConnections();
+    }
     if(event is RetryConnection) {
       try {
         await NotificationController.getInstance().initWebSocketConnection();
         final controllers = NotificationController.getInstance().streamControllers;
-        // print(controllers);
         yield CryptoLoaded(cryptoInfo: controllers);
       } catch(e) {
         print(e);

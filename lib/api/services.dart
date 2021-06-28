@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:currencies_pages/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -9,18 +10,39 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dart:io';
+
 enum Crypto_Type {
   btc,
   eth,
   doge
 }
-const btcUrl = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker';
+
+const btcUsdUrl = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker';
 const ethUrl = 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker';
 const dogeUrl = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker';
 const btcRubUrl = 'wss://stream.binance.com:9443/stream?streams=btcrub@bookTicker';
 const btcEurUrl = 'wss://stream.binance.com:9443/stream?streams=btceur@bookTicker';
 
-List<String> urls = [btcUrl,ethUrl,dogeUrl,btcRubUrl,btcEurUrl];
+List<String> urls = [btcUsdUrl,ethUrl,dogeUrl,btcRubUrl,btcEurUrl];
+
+Map<Currency_Pairs,List<Currency_Pairs>> currencyChains = {
+  Currency_Pairs.btcusd: [Currency_Pairs.btcusd, Currency_Pairs.usdrub, Currency_Pairs.eurusd],
+  Currency_Pairs.btceur: [Currency_Pairs.btceur, Currency_Pairs.eurrub, Currency_Pairs.eurusd],
+  Currency_Pairs.btcrub: [Currency_Pairs.btcrub, Currency_Pairs.eurrub, Currency_Pairs.usdrub],
+  Currency_Pairs.eurusd: [Currency_Pairs.eurusd],
+  Currency_Pairs.eurrub: [Currency_Pairs.eurrub],
+  Currency_Pairs.usdrub: [Currency_Pairs.usdrub],
+  Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
+  Currency_Pairs.ethusd: [Currency_Pairs.ethusd],
+};
+
+Map<Currency_Pairs, String> pairsUrls = {
+  Currency_Pairs.btcusd: btcUsdUrl,
+  Currency_Pairs.btceur: btcEurUrl,
+  Currency_Pairs.btcrub: btcRubUrl,
+  Currency_Pairs.dogeusd: dogeUrl,
+  Currency_Pairs.ethusd: ethUrl,
+};
 
 class NotificationController {
 
@@ -28,7 +50,11 @@ class NotificationController {
 
   List<StreamController> streamControllers = urls.map((e) => StreamController.broadcast(sync: true)).toList();
 
-  List<WebSocket?> channels = [];
+  List<Map<Currency_Pairs, WebSocket>> channels = [];
+
+  List<Currency_Pairs> closeConnection(Currency_Pairs pair) {
+    return currencyChains[pair]!;
+  }
 
   static NotificationController getInstance() {
     if(_singleton == null) {
@@ -36,35 +62,37 @@ class NotificationController {
     }
     return _singleton!;
   }
-
+  closeAllConnections() {
+    for(var i = 0; i < channels.length; i ++) {
+      channels[i].entries.toList()[0].value.close();
+    }
+  }
   initWebSocketConnection() async {
     print("conecting...");
-    channels = await connectWs();
+    channels = (await connectWs()).asMap().entries.map((e) {
+      print(e);
+      return {Currency_Pairs.values[e.key]: e.value};
+    }).toList();
     print("socket connection initializied");
     // channels.forEach((element) {
     //   element!.done.then((dynamic _) => _onDisconnected());
     // });
     broadcastNotifications();
   }
-
   broadcastNotifications() {
     for(var i = 0; i < channels.length; i ++) {
-      channels[i]!.listen((streamData) {
+      channels[i].values.toList()[0].listen((streamData) {
         streamControllers[i].add(streamData);
       });
     }
   }
-
-  Future<List<WebSocket>> connectWs() async{
-    return await Future.wait(urls.map((e) => WebSocket.connect(e)));
+  Future<List<WebSocket>> connectWs() async {
+    return await Future.wait(pairsUrls.entries.map((e) => WebSocket.connect(e.value)).toList());
   }
-
   void _onDisconnected() {
     // initWebSocketConnection();
   }
 }
-
-
 
 final darkTheme = ThemeData(
   primarySwatch: Colors.grey,
@@ -128,7 +156,7 @@ class LocalDataProvider implements LocalDataRepo {
   Future<Null> storeCrypto(Crypto crypto) async {
     final prefs = await SharedPreferences.getInstance();
     // prefs.setString('crypto', jsonEncode([]));
-
+    // prefs.setString('crypto', jsonEncode([]));
     if(prefs.getString('crypto') == null) {
       prefs.setString('crypto', jsonEncode([crypto]));
     }

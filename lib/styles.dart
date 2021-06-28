@@ -5,19 +5,30 @@ abstract class CurrencyStyles {
   double currencyPriceFontSize();
   double iconsSize();
   Color currencyNameFontColor();
+  double currencyWidgetHeight();
 }
-class PortraitStyles implements CurrencyStyles {
+
+class LayoutStyles {
+  static double get footerHeight => 50 + footerPadding * 2;
+  static double get appbarHeight => 40;
+  static double get footerPadding => 8;
+}
+
+class PortraitStyles extends CurrencyStyles {
   double currencyNameFontSize() => 30;
   double currencyPriceFontSize() => 50;
   double iconsSize() => 40;
   Color currencyNameFontColor() => Colors.grey[600]!;
+  double currencyWidgetHeight() => 120;
 }
 
-class LandscapeStyles implements CurrencyStyles {
+class LandscapeStyles extends CurrencyStyles {
   double currencyNameFontSize() => 45;
   double currencyPriceFontSize() => 70;
   double iconsSize() => 60;
   Color currencyNameFontColor() => Colors.grey[600]!;
+  double currencyWidgetHeight() => 220;
+
 }
 
 class RingStyles {
