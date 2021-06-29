@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:bloc/bloc.dart';
-import 'package:currencies_pages/api/services.dart';
+import 'package:currencies_pages/api/currenciesProvider.dart';
+import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/bloc/currency/events.dart';
 

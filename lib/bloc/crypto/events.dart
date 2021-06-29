@@ -1,6 +1,6 @@
-import 'package:currencies_pages/model/currencies.dart';
-import 'package:currencies_pages/screens/home_screen.dart';
 import 'package:equatable/equatable.dart';
+
+import '../../constants.dart';
 
 abstract class CryptoEvent extends Equatable {
   @override
@@ -26,7 +26,19 @@ class CryptoRemovePair extends CryptoEvent {
   final Currency_Pairs pair;
   CryptoRemovePair({required this.pair});
   @override
+  List<Object> get props => [pair];
+}
+
+class NotConfirmedRemovePair extends CryptoEvent {
+  @override
   List<Object> get props => [];
+}
+
+class ConfirmedRemovePair extends CryptoEvent {
+  final List<Currency_Pairs> pairs;
+  ConfirmedRemovePair({required this.pairs});
+  @override
+  List<Object> get props => [pairs];
 }
 
 class GetLocalCrypto extends CryptoEvent {

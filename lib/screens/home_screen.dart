@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:math';
 
-// import 'package:carousel_slider/carousel_slider.dart';
-import 'package:currencies_pages/api/services.dart';
 import 'package:currencies_pages/bloc/crypto/bloc.dart';
 import 'package:currencies_pages/bloc/crypto/events.dart';
 import 'package:currencies_pages/bloc/crypto/states.dart';
@@ -20,26 +18,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
-import 'package:intl/intl.dart' as intl;
 import 'package:multiple_stream_builder/multiple_stream_builder.dart';
-import 'dart:io' as devicishe;
 
+import '../constants.dart';
 import '../styles.dart';
+import '../tools.dart';
 import 'config_screen.dart';
 
 double degToRad(double deg) => deg * (pi / 180.0);
 
-enum Price_Changes {
-  equal,
-  increased,
-  decreased
-}
 
-enum Statuses {
-  unknown,
-  online,
-  offline
-}
 
 Map<Currency_Type, String> currencyTypeMapper = {
   Currency_Type.eurusd: 'Евро/Доллар',
@@ -67,71 +55,11 @@ class StreamWidgetBuilder {
   }
 }
 
-enum Currency_Pairs {
-  btcusd,
-  ethusd,
-  dogeusd,
-  btcrub,
-  btceur,
-  eurusd,
-  eurrub,
-  usdrub
-}
-// ['btcusdt', 'ethusdt', 'btceur', 'dogeusdt']
-
-
-class CryptoFromBackendHelper {
-  static Map<Currency_Pairs, String> _nameByCurrencyType = {
-    Currency_Pairs.btcusd: 'BTC-USD',
-    Currency_Pairs.ethusd: 'ETH-USD',
-    Currency_Pairs.dogeusd: 'DOGE-USD',
-    Currency_Pairs.btcrub: 'BTC-RUB',
-    Currency_Pairs.btceur: 'BTC-EUR',
-    Currency_Pairs.usdrub: 'USD-RUB',
-    Currency_Pairs.eurusd: 'EUR-USD',
-    Currency_Pairs.eurrub: 'EUR-RUB',
-  };
-  static Currency_Pairs _getCurrencyType(Map<String, dynamic> crypto) {
-    var stringType = crypto['s'].toLowerCase();
-
-    if(stringType.endsWith('t')) {
-      List<String> c = stringType.split("");
-      c.removeLast();
-      stringType = c.join();
-    }
-    return stringCurPairsToEnum(stringType);
-  }
-  static String _getPrice(Map<String, dynamic> crypto) {
-    var price = ((double.parse(crypto['b']) + double.parse(crypto['a'])) / 2);
-    return makeShortPrice(price);
-  }
-  static String getNameByCurrencyType(Currency_Pairs type) {
-    return _nameByCurrencyType[type]!;
-  }
-  static String _getName(Map<String, dynamic> crypto) {
-    return getNameByCurrencyType(_getCurrencyType(crypto));
-  }
-  static Currency_Pairs getCurrencyTypeByName(String name) {
-    return _nameByCurrencyType.keys.firstWhere((element) => _nameByCurrencyType[element] == name);
-  }
-  static Crypto createCrypto(Map<String, dynamic> crypto) {
-    var price = _getPrice(crypto);
-    var type = _getCurrencyType(crypto);
-    var name = _getName(crypto);
-    return Crypto(name: name, price: price, type: type);
-  }
-}
-
-String makeShortPrice(double price) {
-  var stringPrice = price.toString();
-  return stringPrice = stringPrice.length > 9 ? stringPrice.substring(0, 9) : stringPrice;
-}
-
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
 
   bool _isInForeground = true;
 
-  List<StreamController> cryptoControllers = [];
+  StreamController<Map<Currency_Pairs, Crypto?>>? cryptoController;
 
   Map<Currency_Type, num> previousCurrencies = {};
   String succeedTime = '';
@@ -141,6 +69,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   double yScrollPosition = 0;
   bool dropped = false;
+
+  List<ValueNotifier<Crypto>> streamsNotifiers = [];
 
   final ValueNotifier<double> _topLoaderHeight = ValueNotifier<double>(0);
 
@@ -329,7 +259,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             return _localCryptoLoaded(state.cryptoList);
           }
           if(state is CryptoLoaded) {
-            return _cryptoLoaded(state.cryptoInfo);
+            print(state.confirmationDetails);
+
+            return _cryptoLoaded(state.streamController, state.confirmationDetails);
           }
           return Container();
         });
@@ -413,261 +345,116 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       ),
     );
   }
+   Function(CurrencyStyles styles) _orientatedCurrencyWidget({required String name, required String price}) {
+    return (CurrencyStyles styles) {
+      return _listenableCurrencyWidget(styles: styles,price: price,name: name);
+    };
+  }
 
-  // Widget _portraitCarousel(List<Widget> items) {
-  //   return ConstrainedBox(
-  //       constraints:new BoxConstraints.loose(new Size(MediaQuery.of(context).size.width, 170.0)),
-  //       child: ValueListenableBuilder<int>(
-  //       builder: (_, int value, __) {
-  //         return Swiper(
-  //           pagination: new SwiperPagination(
-  //               builder: DotSwiperPaginationBuilder(
-  //                   color: Colors.grey
-  //               ),
-  //               margin: new EdgeInsets.all(10.0)
-  //           ),
-  //           itemCount: items.length,
-  //           itemBuilder: (BuildContext context, int index) {
-  //             return items[index];
-  //           },
-  //         );
-  //       },
-  //       valueListenable: portraitPageIndex,
-  //     ),
-  //   );
-  // }
-
-  Widget _cryptoLoaded(cryptoInfo) {
-    if(cryptoControllers.isEmpty) {
-      cryptoControllers = cryptoInfo;
-    }
-    var btcusd = '';
-    var btcrub = '';
-    var btceur = '';
-    final i = cryptoInfo;
-
-    final styles = PortraitStyles();
-    SingleChildScrollView(
-      child: Column(
-        children: [
-          ...(cryptoInfo as List).map((e) {
-            return StreamBuilder(
-              stream: e,
-              builder: (_, snapshot) {
-                if(!snapshot.hasData) {
-                  return _cryptoWaiter();
-                }
-                final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(snapshot.data!.toString())['data']);
-                if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
-                if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
-                if(crypto.type == Currency_Pairs.btcrub) btcrub = crypto.price;
-                if(btcusd.isNotEmpty && btcrub.isNotEmpty
-                    && (crypto.type == Currency_Pairs.btcusd || crypto.type == Currency_Pairs.btcrub)
-                ) {
-                  context.read<LocalDataBloc>().add(
-                      StoreCrypto(crypto: Crypto(
-                          name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub),
-                          price: makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
-                          type: Currency_Pairs.usdrub
-                      )));
-                }
-                if(btceur.isNotEmpty && btcusd.isNotEmpty
-                    && (crypto.type == Currency_Pairs.btceur || crypto.type == Currency_Pairs.btcusd)
-                ) {
-                  context.read<LocalDataBloc>().add(
-                      StoreCrypto(crypto: Crypto(
-                          name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd),
-                          price: makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
-                          type: Currency_Pairs.eurusd
-                      )));
-                }
-                if(btcrub.isNotEmpty && btceur.isNotEmpty
-                    && (crypto.type == Currency_Pairs.btcrub || crypto.type == Currency_Pairs.btceur)
-                ) {
-                  context.read<LocalDataBloc>().add(
-                      StoreCrypto(crypto: Crypto(
-                          name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub),
-                          price: makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
-                          type: Currency_Pairs.eurrub
-                      )));
-                }
-                context.read<LocalDataBloc>().add(StoreCrypto(crypto: crypto));
-                return _listenableCurrencyWidget(styles: styles,price:crypto.price,name:crypto.name);
+  Future<bool> _showConfirmDialog(List<Currency_Pairs> confirmationDetails) async {
+    controller.stop();
+    final d = confirmationDetails;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext alertContext) {
+        return AlertDialog(
+          title: Text(d.length > 1 ? 'Warning' : 'Confirmation'),
+          content: Text(
+              d.length > 1
+                  ? 'Are you sure want to delete this pair? This pairs will be deleted too: $d}'
+                  : 'Are you sure want to delete this pair?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('no'),
+              onPressed: () {
+                Navigator.pop(alertContext);
+                context.read<CryptoBloc>().add(NotConfirmedRemovePair());
+                controller.forward();
               },
-            );
-          })
-        ],
-      ),
+            ),
+            TextButton(
+              child: const Text('confirm'),
+              onPressed: () {
+                Navigator.pop(alertContext);
+                context.read<CryptoBloc>().add(ConfirmedRemovePair(pairs: confirmationDetails));
+              },
+            ),
+          ],
+        );
+      },
     );
-    return ValueListenableBuilder(
-      valueListenable: orientationUI,
-      builder: (_, orientation, __) => StreamBuilder5<dynamic,dynamic,dynamic,dynamic, dynamic>(
-        streams: Tuple5(i[0].stream, i[1].stream, i[2].stream, i[3].stream, i[4].stream),
-        builder: (BuildContext context, Tuple5<AsyncSnapshot<dynamic>, AsyncSnapshot<dynamic>,
-            AsyncSnapshot<dynamic>, AsyncSnapshot<dynamic>,AsyncSnapshot<dynamic>> snapshots) {
-          final mapper = [snapshots.item1, snapshots.item2, snapshots.item3, snapshots.item4, snapshots.item5];
-          var eurRubUsd = [btcusd, btcrub, btceur];
-          if(orientation == Orientation.portrait) {
-            final styles = PortraitStyles();
-            return SingleChildScrollView(
-              child: Column(
-                  children: [
-                    ...mapper.asMap().entries.map((e) {
-                      final index = e.key;
-                      if(!mapper[index].hasData) {
+    return false;
+  }
+
+  Widget _cryptoLoaded(StreamController<Map<Currency_Pairs, Crypto?>> streamController, List<Currency_Pairs> confirmationDetails) {
+
+    // marker
+    if(confirmationDetails.length != 0) {
+      Future.delayed(Duration.zero, () => _showConfirmDialog(confirmationDetails));
+    }
+    if(cryptoController == null) {
+      cryptoController = streamController;
+    }
+
+    return StreamBuilder<Map<Currency_Pairs, Crypto?>>(
+      stream: streamController.stream,
+      builder: (_, snapshot) {
+        if(!snapshot.hasData) {
+          return _cryptoWaiter();
+        }
+        final cryptoPairs = snapshot.data!;
+
+        final items = cryptoPairs.values.map((crypto) {
+          if(crypto == null) {
+            return null;
+          }
+          return _orientatedCurrencyWidget(price: crypto.price, name: crypto.name);
+        }).toList();
+
+        return ValueListenableBuilder(
+          valueListenable: orientationUI,
+          builder: (_, orientation, __) {
+            if (orientation == Orientation.portrait) {
+              final styles = PortraitStyles();
+
+              return SingleChildScrollView(
+                  child: Column(
+                      children: items.map<Widget>((e) {
+                        if(e == null) {
+                          return _cryptoWaiter();
+                        }
+                        return e(styles);
+                      }).toList()
+                  )
+              );
+            }
+            if (orientation == Orientation.landscape) {
+              final styles = LandscapeStyles();
+
+              return SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
+                  child: Swiper(
+                    pagination: const SwiperPagination(
+                      alignment: Alignment.bottomCenter,
+                      builder: DotSwiperPaginationBuilder(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      if(items[index] == null) {
                         return _cryptoWaiter();
                       }
-
-                      final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(mapper[index].data!.toString())['data']);
-                      if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
-                      if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
-                      if(crypto.type == Currency_Pairs.btcrub) btcrub = crypto.price;
-                      if(btcusd.isNotEmpty && btcrub.isNotEmpty
-                        && (crypto.type == Currency_Pairs.btcusd || crypto.type == Currency_Pairs.btcrub)
-                      ) {
-                        context.read<LocalDataBloc>().add(
-                            StoreCrypto(crypto: Crypto(
-                                name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub),
-                                price: makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
-                                type: Currency_Pairs.usdrub
-                            )));
-                      }
-                      if(btceur.isNotEmpty && btcusd.isNotEmpty
-                          && (crypto.type == Currency_Pairs.btceur || crypto.type == Currency_Pairs.btcusd)
-                      ) {
-                        context.read<LocalDataBloc>().add(
-                            StoreCrypto(crypto: Crypto(
-                                name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd),
-                                price: makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
-                                type: Currency_Pairs.eurusd
-                            )));
-                      }
-                      if(btcrub.isNotEmpty && btceur.isNotEmpty
-                          && (crypto.type == Currency_Pairs.btcrub || crypto.type == Currency_Pairs.btceur)
-                      ) {
-                        context.read<LocalDataBloc>().add(
-                            StoreCrypto(crypto: Crypto(
-                                name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub),
-                                price: makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
-                                type: Currency_Pairs.eurrub
-                            )));
-                      }
-                      context.read<LocalDataBloc>().add(StoreCrypto(crypto: crypto));
-                      return _listenableCurrencyWidget(styles:styles,price:crypto.price,name:crypto.name);
-                    }).toList(),
-                    if(btcusd.isNotEmpty || btceur.isNotEmpty || btcrub.isNotEmpty)
-                      ...[
-                        btcusd.isNotEmpty && btcrub.isNotEmpty
-                          ?
-                            _listenableCurrencyWidget(
-                                styles: styles,
-                                price:makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
-                                name:CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub)
-                            )
-                            :
-                           _cryptoWaiter(),
-
-                        btceur.isNotEmpty && btcusd.isNotEmpty
-                            ?
-                            _listenableCurrencyWidget(
-                                styles: styles,
-                                price:makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
-                                name:CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd)
-                            )
-                            : _cryptoWaiter(),
-                        btcrub.isNotEmpty && btceur.isNotEmpty
-                            ?
-                            _listenableCurrencyWidget(
-                                styles: styles,
-                                price:makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
-                                name:CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub)
-                            )
-                            : _cryptoWaiter()
-                      ]
-                  ].map((e) => ConstrainedBox(
-                    constraints: BoxConstraints.loose(Size(MediaQuery.of(context).size.width, styles.currencyWidgetHeight())),
-                    child: e
-                  )).toList(),
-                ),
-            );
-          }
-
-          if(orientation == Orientation.landscape) {
-            final styles = LandscapeStyles();
-
-            return SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
-                child: Swiper(
-                  pagination: const SwiperPagination(
-                    alignment: Alignment.bottomCenter,
-                    builder: DotSwiperPaginationBuilder(
-                      color: Colors.grey,
-                    ),
-                  ),
-                  itemCount: cryptoInfo.length + eurRubUsd.length,
-                  itemBuilder: (BuildContext context, int index) {
-
-                    mapper.asMap().entries.forEach((e) {
-                      if(!e.value.hasData) {
-                        return;
-                      }
-                      final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(e.value.data!.toString())['data']);
-
-                      if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
-                      if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
-                      if(crypto.type == Currency_Pairs.btcrub) btcrub = crypto.price;
-                    });
-
-                    if(index >= cryptoInfo.length) {
-                      if(index - cryptoInfo.length == 0) {
-                        if (btcusd.isNotEmpty && btcrub.isNotEmpty) {
-                          return _listenableCurrencyWidget(
-                              styles:styles,
-                              price:makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
-                              name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub)
-                          );
-                        }
-                      }
-                      if(index - cryptoInfo.length == 1) {
-                        if(btceur.isNotEmpty && btcusd.isNotEmpty) {
-                          return _listenableCurrencyWidget(
-                              styles:styles,
-                              price:makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
-                              name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd)
-                          );
-                        }
-                      }
-                      if(index - cryptoInfo.length == 2) {
-                        if(btcrub.isNotEmpty && btceur.isNotEmpty) {
-                          return _listenableCurrencyWidget(
-                              styles:styles,
-                              price:makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
-                              name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub)
-                          );
-                        }
-                      }
-                      return _cryptoWaiter();
-                    }
-
-                    if(!mapper[index].hasData) {
-                      return _cryptoWaiter();
-                    }
-
-                    final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(mapper[index].data!.toString())['data']);
-
-                    context.read<LocalDataBloc>().add(StoreCrypto(crypto: crypto));
-
-                    return Center(
-                      child: _listenableCurrencyWidget(styles: styles,price: crypto.price,name: crypto.name)
-                    );
-                  },
-                ),
+                      return items[index]!(styles);
+                    })
               );
+            }
+            return Container();
           }
-          return Container();
-          },
-        ),
+        );
+      }
     );
   }
 
@@ -699,7 +486,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   Widget _cryptoWaiter() {
-    return Center(child:Text('...', style: TextStyle(fontSize:40)));
+    return ValueListenableBuilder(
+        valueListenable: orientationUI,
+        builder: (_, orientation, __) {
+          final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
+          return SizedBox(
+              height: styles.currencyWidgetHeight(),
+              child: Center(
+                  child:Text('...', style: TextStyle(fontSize:40))));
+        }
+    );
   }
 
   Widget _localCryptoLoaded(List<Crypto> cryptoList) {
@@ -790,10 +586,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
   @override
   void dispose() {
-    print('dispose');
-    cryptoControllers.forEach((element) {
-      element.close();
-    });
+    // cryptoControllers.forEach((element) {
+    //   element.close();
+    // });
     super.dispose();
     WidgetsBinding.instance!.removeObserver(this);
   }
@@ -973,29 +768,32 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   @override
   Widget build(BuildContext context) {
 
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(widget.currencyName, style: TextStyle(fontSize: widget.styles.currencyNameFontSize(), color: widget.styles.currencyNameFontColor()),),
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                    widget.currencyPrice.toString(),
-                    style: TextStyle(
-                        color: widget.finalColor,
-                        fontSize: widget.styles.currencyPriceFontSize())),
-                if(widget.gradDirection != null)
-                  widget.gradDirection == Grad_Direction.down
-                      ? Icon(Icons.arrow_drop_down_outlined, size: widget.styles.iconsSize(),)
-                      : Icon(Icons.arrow_drop_up_outlined, size: widget.styles.iconsSize(),)
-              ],
-            ),
-          ],
+        return SizedBox(
+          height: widget.styles.currencyWidgetHeight(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(widget.currencyName, style: TextStyle(fontSize: widget.styles.currencyNameFontSize(), color: widget.styles.currencyNameFontColor()),),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                      widget.currencyPrice.toString(),
+                      style: TextStyle(
+                          color: widget.finalColor,
+                          fontSize: widget.styles.currencyPriceFontSize())),
+                  if(widget.gradDirection != null)
+                    widget.gradDirection == Grad_Direction.down
+                        ? Icon(Icons.arrow_drop_down_outlined, size: widget.styles.iconsSize(),)
+                        : Icon(Icons.arrow_drop_up_outlined, size: widget.styles.iconsSize(),)
+                ],
+              ),
+            ],
+          ),
         );
   }
 

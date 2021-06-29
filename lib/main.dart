@@ -1,14 +1,14 @@
-import 'package:currencies_pages/api/services.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/bloc/localData/states.dart';
-import 'package:currencies_pages/screens/config_screen.dart';
 import 'package:currencies_pages/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 
+import 'api/currenciesProvider.dart';
+import 'api/localData.dart';
 import 'bloc/crypto/bloc.dart';
 
 void main() {

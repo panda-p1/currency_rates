@@ -1,13 +1,10 @@
-import 'package:currencies_pages/api/services.dart';
-import 'package:currencies_pages/bloc/currency/bloc.dart';
+import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/bloc/localData/states.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:async';
-import 'dart:io';
 
 import '../styles.dart';
 

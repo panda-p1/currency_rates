@@ -1,14 +1,6 @@
-import 'package:currencies_pages/screens/home_screen.dart';
-Currency_Pairs stringCurPairsToEnum(String str) {
-  try {
-    return Currency_Pairs.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum stringCurPairsToEnum type!!");
-    return Currency_Pairs.values.first;
-  }
-}
+import '../constants.dart';
+import '../tools.dart';
+
 
 class Crypto {
   final String price;
@@ -26,7 +18,7 @@ class Crypto {
     return {
       'price': price,
       'name': name,
-      'type': type.toString().substring(type.toString().indexOf('.') + 1)
+      'type': getValueAfterDot(type)
     };
   }
 }

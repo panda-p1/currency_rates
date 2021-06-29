@@ -1,64 +1,13 @@
-
-import 'package:currencies_pages/api/services.dart';
-import 'package:currencies_pages/screens/home_screen.dart';
-
-enum Grad_Direction {
-  up,
-  down
-}
+import '../constants.dart';
+import '../tools.dart';
 
 
 
-String enumToString(Grad_Direction dir) {
-  if(dir == Grad_Direction.down) {
-    return 'down';
-  }
-  if(dir == Grad_Direction.up) {
-    return 'up';
-  }
-  throw Exception();
-}
 
-Grad_Direction stringGradDirToEnum(String str) {
-  try {
-    return Grad_Direction.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum type!!");
-    return Grad_Direction.values.first;
-  }
-}
 
-Theme_Types stringThemeToEnum(String str) {
-  try {
-    return Theme_Types.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum type!!");
-    return Theme_Types.values.first;
-  }
-}
 
-Currency_Type stringCurTypeToEnum(String str) {
-  try {
-    return Currency_Type.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum type!!");
-    return Currency_Type.values.first;
-  }
-}
-enum Currency_Type {
-  brent,
-  eur,
-  eurusd,
-  usd,
-  eth,
-  doge
-}
+
+
 
 class Currency {
   final num price;
@@ -67,8 +16,8 @@ class Currency {
   Currency({required this.price, required this.gradDirection, required this.type});
 
   Map<String, dynamic> toJson() => {
-    '${type.toString().substring(type.toString().indexOf('.') + 1)}Change': gradDirection.toString().substring(gradDirection.toString().indexOf('.') + 1),
-    '${type.toString().substring(type.toString().indexOf('.') + 1)}': price
+    '${getValueAfterDot(type)}Change': gradDirection.toString().substring(gradDirection.toString().indexOf('.') + 1),
+    '${getValueAfterDot(type)}': price
   };
 }
 

@@ -1,6 +1,5 @@
-import 'package:currencies_pages/api/services.dart';
+import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/localData/states.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'events.dart';
