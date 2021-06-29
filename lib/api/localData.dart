@@ -68,7 +68,10 @@ class LocalDataProvider implements LocalDataRepo {
     final pairsString = prefs.getString('chosenPairs');
     // if(pairsString == null) {
       saveDefaultPairs();
-      return Currency_Pairs.values.where((element) => Default_Currency_Pairs.values.contains(element)).toList();
+
+      return Currency_Pairs.values
+          .where((element) => Default_Currency_Pairs.values.map((e) => getValueAfterDot(e)).toList()
+          .contains(getValueAfterDot(element))).toList();
     // }
 
     // final pairsJson = jsonDecode(pairsString) as List;
@@ -175,7 +178,7 @@ class LocalDataProvider implements LocalDataRepo {
       return lightTheme;
     } catch (e) {
       print(e);
-      prefs.setString('themeMode', 'light');
+      prefs.setString('themeMode', 'dark');
       return lightTheme;
     }
   }

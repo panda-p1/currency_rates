@@ -41,7 +41,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       yield CryptoLoaded(streamController: controller, confirmationDetails: []);
     }
     if(event is ConfirmedRemovePair) {
-      notifCtrl.confirmedCloseConnection(event.pairs);
+      await notifCtrl.confirmedCloseConnection(event.pairs);
       final controller = notifCtrl.streamController;
       yield CryptoLoaded(streamController: controller, confirmationDetails: []);
     }

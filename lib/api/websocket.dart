@@ -50,19 +50,28 @@ class NotificationController {
     return currencyChains[pair]!;
   }
 
-  confirmedCloseConnection(List<Currency_Pairs> pairss) {
-    pairs.removeWhere((element) => pairss.contains(element));
+  confirmedCloseConnection(List<Currency_Pairs> pairss) async {
+    // print(obj);
 
-    pairss.forEach((element) {
-      LocalDataProvider().removePair(element);
+    for(var pair in pairss) {
+      print(pair);
+      // await LocalDataProvider().removePair(pair);
 
-      if(channels.containsKey(element)) {
-        channels[element]!.close();
-        channels.remove(element);
+      if(channels.containsKey(pair)) {
+        print('channels.containsKey(pair)');
+        await channels[pair]!.close();
+        channels.remove(pair);
       }
-      obj.remove(element);
-    });
-    print('confirmedCloseConnection');
+      pairs.removeWhere((element) => pairss.contains(element));
+      Future.delayed(Duration.zero, () {
+        obj.remove(pair);
+      });
+
+      // print('confirmedCloseConnection');
+    }
+    // print(obj);
+    // print(channels);
+
   }
 
   static NotificationController getInstance() {
@@ -74,7 +83,6 @@ class NotificationController {
 
   closeAllConnections() {
     for(var i = 0; i < channels.length; i++) {
-      print(i);
       channels.values.toList()[i].close();
     }
   }
@@ -84,78 +92,73 @@ class NotificationController {
       throw Exception('pairsUrls does not contain this pair');
     }
 
-    if(pair == Currency_Pairs.dogeusd) {
-      channels[Currency_Pairs.dogeusd]!.listen((streamData) {
-        final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
-        obj[crypto.type] = crypto;
-        streamController.add(obj);
-      });
-      return;
-    }
-    if(pair == Currency_Pairs.ethusd) {
-      channels[Currency_Pairs.ethusd]!.listen((streamData) {
-        final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
-        obj[crypto.type] = crypto;
-        streamController.add(obj);
-      });
-      return;
-    }
-    print(pairs);
+    // if(pair == Currency_Pairs.dogeusd || pair == Currency_Pairs.ethusd) {
+    //   channels[pair]!.listen((streamData) {
+    //     final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
+    //     obj[crypto.type] = crypto;
+    //     streamController.add(obj);
+    //   });
+    //   return;
+    // }
+
     channels[pair]!.listen((streamData) {
+      print(streamData);
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
-      if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
-      if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
-      if(crypto.type == Currency_Pairs.btcrub) btcrub = crypto.price;
+      // if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
+      // if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
+      // if(crypto.type == Currency_Pairs.btcrub) btcrub = crypto.price;
       obj[crypto.type] = crypto;
 
-      if(pairs.contains(Currency_Pairs.eurrub) &&
-          btcrub.isNotEmpty && btceur.isNotEmpty
-          && (crypto.type == Currency_Pairs.btcrub || crypto.type == Currency_Pairs.btceur)) {
-        obj[Currency_Pairs.eurrub] = Crypto(
-            name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub),
-            price: makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
-            type: Currency_Pairs.eurrub);
-      }
-      if(pairs.contains(Currency_Pairs.eurusd) &&
-          btceur.isNotEmpty && btcusd.isNotEmpty
-          && (crypto.type == Currency_Pairs.btceur || crypto.type == Currency_Pairs.btcusd)) {
-        obj[Currency_Pairs.eurusd] = Crypto(
-            name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd),
-            price: makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
-            type: Currency_Pairs.eurusd);
-      }
-      if(pairs.contains(Currency_Pairs.usdrub) &&
-          btcusd.isNotEmpty && btcrub.isNotEmpty
-          && (crypto.type == Currency_Pairs.btcusd || crypto.type == Currency_Pairs.btcrub)) {
-        obj[Currency_Pairs.usdrub] =  Crypto(
-            name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub),
-            price: makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
-            type: Currency_Pairs.usdrub);
-      }
+      // if(pairs.contains(Currency_Pairs.eurrub) &&
+      //     btcrub.isNotEmpty && btceur.isNotEmpty
+      //     && (crypto.type == Currency_Pairs.btcrub || crypto.type == Currency_Pairs.btceur)) {
+      //   obj[Currency_Pairs.eurrub] = Crypto(
+      //       name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub),
+      //       price: makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
+      //       type: Currency_Pairs.eurrub);
+      // }
+      // if(pairs.contains(Currency_Pairs.eurusd) &&
+      //     btceur.isNotEmpty && btcusd.isNotEmpty
+      //     && (crypto.type == Currency_Pairs.btceur || crypto.type == Currency_Pairs.btcusd)) {
+      //   obj[Currency_Pairs.eurusd] = Crypto(
+      //       name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd),
+      //       price: makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
+      //       type: Currency_Pairs.eurusd);
+      // }
+      // if(pairs.contains(Currency_Pairs.usdrub) &&
+      //     btcusd.isNotEmpty && btcrub.isNotEmpty
+      //     && (crypto.type == Currency_Pairs.btcusd || crypto.type == Currency_Pairs.btcrub)) {
+      //   obj[Currency_Pairs.usdrub] =  Crypto(
+      //       name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub),
+      //       price: makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
+      //       type: Currency_Pairs.usdrub);
+      // }
       streamController.add(obj);
       return;
     });
+    //     .onDone(() {
+    //   obj.remove(pair);
+    // });
 
   }
 
   initWebSocketConnection() async {
     print("connecting...");
     pairs = await LocalDataProvider().getChosenPairs();
-    print(pairs);
+    //@TODO REMOVE THIS BIG PROBLEM WITH INITIALISATION
+    final pepe = pairsUrls.keys.where((element) => pairs.contains(element)).toList();
     obj = {for (var pair in pairs) pair: null};
     final websockets = await Future.wait(
-        pairsUrls.keys.where((element) => pairs.contains(element)).toList()
-            .map((e) => connectWs(MapEntry(e, pairsUrls[e]!))).toList());
-    channels = {for (var v in websockets) pairs[websockets.indexOf(v)]: v };
-    print(channels.keys);
+        pepe.map((e) => connectWs(MapEntry(e, pairsUrls[e]!))).toList());
+    channels = {for (var v in List.generate(pepe.length - 1 , (idx) => idx)) pepe[v]: websockets[v] };
     for(var channel in channels.keys) {
       addListener(channel);
     }
 
     print("socket connection initializied");
-    channels.forEach((key, value) {
-      value.done.then((dynamic _) => _onDisconnected());
-    });
+    // channels.forEach((key, value) {
+    //   // value.done.then((dynamic _) => _onDisconnected());
+    // });
     // channels.forEach((element) {
     //   // element!.done.then((dynamic _) => _onDisconnected());
     // });

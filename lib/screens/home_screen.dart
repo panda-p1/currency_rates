@@ -27,15 +27,6 @@ import 'config_screen.dart';
 
 double degToRad(double deg) => deg * (pi / 180.0);
 
-
-
-Map<Currency_Type, String> currencyTypeMapper = {
-  Currency_Type.eurusd: 'Евро/Доллар',
-  Currency_Type.eur: 'Евро',
-  Currency_Type.brent: 'Нефть Brent',
-  Currency_Type.usd: 'Доллар',
-};
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -252,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       final currency = entry.value;
       if(entry.key == 0) {
         return BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
+          print(state);
           if(state is CryptoError) {
             return Container();
           }
@@ -259,8 +251,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             return _localCryptoLoaded(state.cryptoList);
           }
           if(state is CryptoLoaded) {
-            print(state.confirmationDetails);
-
             return _cryptoLoaded(state.streamController, state.confirmationDetails);
           }
           return Container();
@@ -404,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           return _cryptoWaiter();
         }
         final cryptoPairs = snapshot.data!;
-
+        print(cryptoPairs);
         final items = cryptoPairs.values.map((crypto) {
           if(crypto == null) {
             return null;
@@ -586,6 +576,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
   @override
   void dispose() {
+    print('dispose');
     // cryptoControllers.forEach((element) {
     //   element.close();
     // });
