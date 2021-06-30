@@ -35,18 +35,26 @@ abstract class LocalDataRepo {
   Future<ThemeData> getTheme();
   Future<double> changeDelay(String dir);
   Future<double> getDelay();
-  Future<Currencies> getLocalCurrencies();
-  Future<Null> storeCurrencies(Currencies currencies);
-  Future<Null> storeCrypto(Crypto crypto);
-  Future<List<Crypto>> getLocalCrypto();
+  Future<Map<Currency_Pairs, Crypto?>> getLocalCurrencies();
+  Future<Null> storeCurrencies(Map<Currency_Pairs, Crypto?> currencies);
   Future<Null> removePair(Currency_Pairs pair);
   Future<List<Currency_Pairs>> getChosenPairs();
   Future<Null> saveDefaultPairs();
   Future<Null> addPair(Currency_Pairs pair);
   Future<List<Currency_Pairs>> getAvailableToAddPairs();
+  Future<Null> reorderPairs(int newIdx, Currency_Pairs pair);
 }
 
 class LocalDataProvider implements LocalDataRepo {
+  Future<Null> reorderPairs(int newIdx, Currency_Pairs pair) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
+    final pairString = getValueAfterDot(pair);
+    final oldIdx = pairsJson.indexOf(pairString);
+    pairsJson.removeAt(oldIdx);
+    pairsJson.insert(newIdx, pairString);
+    prefs.setString('chosenPairs', jsonEncode(pairsJson));
+  }
   Future<List<Currency_Pairs>> getAvailableToAddPairs() async {
     final prefs = await SharedPreferences.getInstance();
     final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
@@ -57,9 +65,9 @@ class LocalDataProvider implements LocalDataRepo {
   Future<Null> addPair(Currency_Pairs pair) async {
     final prefs = await SharedPreferences.getInstance();
     final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
-    final pairs = pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
-    pairs.insert(0, pair);
-    prefs.setString('chosenPairs', jsonEncode(pairs.map((e) => getValueAfterDot(e)).toList()));
+    final pairString = getValueAfterDot(pair);
+    pairsJson.insert(0, pairString);
+    prefs.setString('chosenPairs', jsonEncode(pairsJson));
   }
   @override
   Future<Null> removePair(Currency_Pairs pair) async {
@@ -98,49 +106,21 @@ class LocalDataProvider implements LocalDataRepo {
   }
 
   @override
-  Future<List<Crypto>> getLocalCrypto() async {
+  Future<Null> storeCurrencies(Map<Currency_Pairs, Crypto?> currencies) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonCrypto = jsonDecode(prefs.getString('crypto')!) as List;
-    final cryptoList = jsonCrypto.map((e) => Crypto.fromJson(e)).toList();
-    return cryptoList;
-  }
-
-  @override
-  Future<Null> storeCrypto(Crypto crypto) async {
-    final prefs = await SharedPreferences.getInstance();
-    // prefs.setString('crypto', jsonEncode([]));
-    // prefs.setString('crypto', jsonEncode([]));
-    if(prefs.getString('crypto') == null) {
-      prefs.setString('crypto', jsonEncode([crypto]));
-    }
-    final jsonCrypto = jsonDecode(prefs.getString('crypto')!) as List;
-    final cryptoList = jsonCrypto.map((e) => Crypto.fromJson(e)).toList();
-    if(cryptoList.where((element) => element.name == crypto.name).length == 0) {
-      cryptoList.add(crypto);
-    } else {
-      for(var i = 0; i < cryptoList.length; i++) {
-        if(cryptoList[i].name == crypto.name) {
-          cryptoList.removeAt(i);
-          cryptoList.insert(i, crypto);
-          break;
-        }
-      }
-    }
-    prefs.setString('crypto', jsonEncode(cryptoList));
-
-
+    prefs.setString('currencies', jsonEncode(
+      currencies.map((key, crypto) =>
+        MapEntry(getValueAfterDot(key), crypto != null ? crypto.toJson() : null)
+      )
+    ));
     return null;
   }
-  @override
-  Future<Null> storeCurrencies(Currencies currencies) async {
+  Future<Map<Currency_Pairs, Crypto?>> getLocalCurrencies() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('currencies', jsonEncode(currencies.toJson()));
-    return null;
-  }
-  Future<Currencies> getLocalCurrencies() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonCurrencies = prefs.getString('currencies');
-    return Currencies.fromJson(jsonDecode(jsonCurrencies!));
+    final jsonCurrencies = jsonDecode(prefs.getString('currencies')!) as Map;
+    return jsonCurrencies.map((pair, crypto) =>
+        MapEntry(stringCurPairsToEnum(pair), crypto != 'null' ? Crypto.fromJson(crypto) : null)
+    );
   }
   @override
   Future<double> changeDelay(String dir) async {

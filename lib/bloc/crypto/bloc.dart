@@ -8,20 +8,24 @@ import 'events.dart';
 
 class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   final notifCtrl = NotificationController.getInstance();
+  final LocalDataRepo localDataProvider = LocalDataProvider();
   CryptoBloc() : super(CryptoInitState());
 
   @override
   Stream<CryptoState> mapEventToState(event) async* {
+    print(event);
     if(event is ReorderPair) {
       notifCtrl.reorderPair(event.newIdx, event.pair);
+      localDataProvider.reorderPairs(event.newIdx, event.pair);
     }
     if(event is CheckIfObjIsEmpty) {
       final isEmpty = notifCtrl.isEmpty();
+
       if(isEmpty) {
-        yield CryptoEmpty();
+        // yield CryptoEmpty();
       } else {
         final controller = notifCtrl.streamController;
-        yield CryptoLoaded(streamController: controller, confirmationDetails: []);
+        // yield CryptoLoaded(streamController: controller, confirmationDetails: []);
       }
     }
     if(event is CryptoInitConnection) {
@@ -34,8 +38,8 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         print(e);
         print('crypto error caught');
         try {
-          final cryptoList = await LocalDataProvider().getLocalCrypto();
-          yield LocalCryptoLoaded(cryptoList: cryptoList);
+          final currencies = await LocalDataProvider().getLocalCurrencies();
+          yield LocalCryptoLoaded(currencies: currencies);
         } catch (e) {
           print(e);
           yield CryptoError();
@@ -51,19 +55,16 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     }
     if(event is NotConfirmedRemovePair) {
       final controller = notifCtrl.streamController;
-      final isEmpty = notifCtrl.isEmpty();
-
       yield CryptoLoaded(streamController: controller, confirmationDetails: []);
     }
     if(event is ConfirmedRemovePair) {
       await notifCtrl.confirmedCloseConnection(event.pairs);
       final controller = notifCtrl.streamController;
-      final isEmpty = notifCtrl.isEmpty();
       yield CryptoLoaded(streamController: controller, confirmationDetails: []);
     }
     if(event is GetLocalCrypto) {
-      final cryptoList = await LocalDataProvider().getLocalCrypto();
-      yield LocalCryptoLoaded(cryptoList: cryptoList);
+      final currencies = await LocalDataProvider().getLocalCurrencies();
+      yield LocalCryptoLoaded(currencies: currencies);
     }
     if(event is CryptoCloseAllConnections) {
       notifCtrl.closeAllConnections();
@@ -71,13 +72,11 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     if(event is RetryConnection) {
       try {
         await notifCtrl.initWebSocketConnection();
-        // final controllers = notifCtrl.streamControllers;
-        // yield CryptoLoaded(cryptoInfo: controllers);
       } catch(e) {
         print(e);
         try {
-          final cryptoList = await LocalDataProvider().getLocalCrypto();
-          yield LocalCryptoLoaded(cryptoList: cryptoList);
+          final currencies = await LocalDataProvider().getLocalCurrencies();
+          yield LocalCryptoLoaded(currencies: currencies);
         } catch (e) {
           print(e);
           yield CryptoError();

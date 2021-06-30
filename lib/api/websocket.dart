@@ -72,34 +72,16 @@ class NotificationController {
   }
 
   reorderPair(int newIdx, Currency_Pairs pair) {
-    // @TODO FIX REORDER BUGS
-    final Map<Currency_Pairs, Crypto?> newObj = {};
+    final List<MapEntry<Currency_Pairs, Crypto?>> list = [];
+    obj.forEach((k,v) => list.add(MapEntry(k,v)));
     final oldIndex = obj.keys.toList().indexOf(pair);
-    if(newIdx > oldIndex) {
-      print(obj);
-      for(var key in obj.keys) {
-        final keyIdx = obj.keys.toList().indexOf(key);
-        if(keyIdx < oldIndex) {
-          newObj[key] = obj[key];
-        }
-        if(keyIdx >= oldIndex && keyIdx < newIdx) {
-          newObj[key] = obj[keyIdx + 1];
-        }
+    list.removeAt(oldIndex);
+    list.insert(newIdx, MapEntry(pair, obj[pair]));
 
-        if(newIdx == keyIdx) {
-          print('=');
-          newObj[pair] = obj[pair];
-        }
-
-        if(newIdx > keyIdx) {
-          print('>');
-          newObj[key] = obj[keyIdx];
-        }
-      }
-      print(newObj);
-      obj = newObj;
-    }
-
+    final Map<Currency_Pairs, Crypto?> newObj = {};
+    newObj.addEntries(list);
+    print(newObj);
+    obj = {...newObj};
   }
 
   Future<void> confirmedCloseConnection(List<Currency_Pairs> pairss) async {
@@ -111,8 +93,9 @@ class NotificationController {
       }
 
       pairs.removeWhere((element) => pairss.contains(element));
-
-      if(!pairsUrls.keys.contains(pair) && !pairss.where((element) => element != pair).any((element) => currencyChains[element]!.contains(pair))) { // REMOVING TICKERS THAT HAS NO URL AND WILL NOT BE DELETED BY ITS CHAINS URL
+// REMOVING TICKERS THAT HAS NO URL AND WILL NOT BE DELETED BY ITS CHAINS URL
+      if(!pairsUrls.keys.contains(pair)
+          && !pairss.where((element) => element != pair).any((element) => currencyChains[element]!.contains(pair))) {
         obj.remove(pair);
       }
     }
@@ -204,7 +187,7 @@ class NotificationController {
     final chosenPairs = await LocalDataProvider().getChosenPairs();
     obj = {for (var pair in chosenPairs) pair: null};
     for(var pair in chosenPairs.reversed) {
-      addPair(pair);
+      await addPair(pair);
     }
   }
 

@@ -35,10 +35,10 @@ class CryptoLoaded extends CryptoState {
 }
 
 class LocalCryptoLoaded extends CryptoState {
-  final List<Crypto> cryptoList;
-  LocalCryptoLoaded({required this.cryptoList});
+  final Map<Currency_Pairs, Crypto?> currencies;
+  LocalCryptoLoaded({required this.currencies});
   @override
-  List<Object> get props => [cryptoList];
+  List<Object> get props => [currencies];
 }
 class CryptoRetryConnection extends CryptoState {
   final List<Crypto> cryptoList;

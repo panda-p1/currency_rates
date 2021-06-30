@@ -30,19 +30,27 @@ class GetDelay extends LocalDataEvent {
   List<Object> get props => [];
 }
 
-class StoreCrypto extends LocalDataEvent {
-  final Crypto crypto;
-  StoreCrypto({required this.crypto});
-  @override
-  List<Object> get props => [crypto];
-}
+// class StoreCrypto extends LocalDataEvent {
+//   final Crypto crypto;
+//   StoreCrypto({required this.crypto});
+//   @override
+//   List<Object> get props => [crypto];
+// }
 
 class StoreCurrencies extends LocalDataEvent {
-  final Currencies currencies;
+  final Map<Currency_Pairs, Crypto?> currencies;
   StoreCurrencies({required this.currencies});
   @override
   List<Object> get props => [currencies];
 }
+
+
+// class StoreCurrencies extends LocalDataEvent {
+//   final Currencies currencies;
+//   StoreCurrencies({required this.currencies});
+//   @override
+//   List<Object> get props => [currencies];
+// }
 
 class GetLocalCurrencies extends LocalDataEvent {
   @override

@@ -71,18 +71,11 @@ class LocalDataBloc extends Bloc<LocalDataEvent, LocalDataState> {
         yield StoreCurrenciesError();
       }
     }
-    if(event is StoreCrypto) {
-      try {
-        localDataRepo.storeCrypto(event.crypto);
-      } catch(e) {
-        print(e);
-        yield StoreCurrenciesError();
-      }
-    }
+
     if(event is GetLocalCurrencies) {
       try {
         final currencies = await localDataRepo.getLocalCurrencies();
-        yield LocalCurrencies(currencies: currencies);
+        // yield LocalCurrencies(currencies: currencies);
       } catch(e) {
         print(e);
         yield GetLocalCurrenciesError();

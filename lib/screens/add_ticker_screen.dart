@@ -55,6 +55,9 @@ class _AddTickerScreenState extends State<AddTickerScreen> {
   }
 
   Widget _availablePairsView(List<Currency_Pairs> pairs) {
+    if(pairs.isEmpty) {
+      return Center(child: Text('You have added all available currencies', style: TextStyle(fontSize: 40),),);
+    }
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView(
