@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       final currency = entry.value;
       if(entry.key == 0) {
         return BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
-          print(state);
+          // print(state);
           if(state is CryptoError) {
             return Container();
           }
@@ -460,22 +460,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 }
                 return e(styles);
               }).toList();
+              return ValueListenableBuilder<bool>(
+                  valueListenable: isEditingMode,
+                  builder: (_, mode, __) {
+                    if(mode) {
+                      var wrap = ReorderableWrap(
+                        onReorder: (oldIdx, newIdx) {
+                          //marker
+                        final pair = cryptoPairs.keys.toList()[oldIdx];
+                        context.read<CryptoBloc>().add(ReorderPair(newIdx: newIdx, pair: pair));
+                      },
+                        children: styledItems,
+                      );
+                      return SingleChildScrollView(
+                          child: Column(
+                              children: [wrap]
+                          )
+                      );
+                    }
+                    return SingleChildScrollView(
+                        child: Column(
+                            children: styledItems
+                        )
+                    );
+                  });
 
-              var wrap = ReorderableWrap(
-                onReorder: (_,__) => {},
-                children: items.map<Widget>((e) {
-                            if(e == null) {
-                              return _cryptoWaiter();
-                            }
-                            return e(styles);
-                          }).toList(),
-              );
 
-              return SingleChildScrollView(
-                  child: Column(
-                      children: styledItems
-                  )
-              );
+
             }
             if (orientation == Orientation.landscape) {
               final styles = LandscapeStyles();

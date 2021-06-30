@@ -12,6 +12,9 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
 
   @override
   Stream<CryptoState> mapEventToState(event) async* {
+    if(event is ReorderPair) {
+      notifCtrl.reorderPair(event.newIdx, event.pair);
+    }
     if(event is CheckIfObjIsEmpty) {
       final isEmpty = notifCtrl.isEmpty();
       if(isEmpty) {

@@ -51,6 +51,14 @@ class RetryConnection extends CryptoEvent {
   List<Object> get props => [];
 }
 
+class ReorderPair extends CryptoEvent {
+  final int newIdx;
+  final Currency_Pairs pair;
+  ReorderPair({required this.newIdx, required this.pair});
+  @override
+  List<Object> get props => [newIdx, pair];
+}
+
 class CheckIfObjIsEmpty extends CryptoEvent {
   @override
   List<Object> get props => [];

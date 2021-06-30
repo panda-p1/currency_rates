@@ -71,6 +71,37 @@ class NotificationController {
     return currencyChains[pair]!.where((element) => obj.keys.contains(element)).toList();
   }
 
+  reorderPair(int newIdx, Currency_Pairs pair) {
+    // @TODO FIX REORDER BUGS
+    final Map<Currency_Pairs, Crypto?> newObj = {};
+    final oldIndex = obj.keys.toList().indexOf(pair);
+    if(newIdx > oldIndex) {
+      print(obj);
+      for(var key in obj.keys) {
+        final keyIdx = obj.keys.toList().indexOf(key);
+        if(keyIdx < oldIndex) {
+          newObj[key] = obj[key];
+        }
+        if(keyIdx >= oldIndex && keyIdx < newIdx) {
+          newObj[key] = obj[keyIdx + 1];
+        }
+
+        if(newIdx == keyIdx) {
+          print('=');
+          newObj[pair] = obj[pair];
+        }
+
+        if(newIdx > keyIdx) {
+          print('>');
+          newObj[key] = obj[keyIdx];
+        }
+      }
+      print(newObj);
+      obj = newObj;
+    }
+
+  }
+
   Future<void> confirmedCloseConnection(List<Currency_Pairs> pairss) async {
     for(var pair in pairss) {
       LocalDataProvider().removePair(pair);
