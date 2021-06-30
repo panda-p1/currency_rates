@@ -31,7 +31,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         return false;
       },
       child: Scaffold(
-        appBar: AppBar(),
+        appBar: PreferredSize(child: AppBar(), preferredSize: Size.fromHeight(LayoutStyles.appbarHeight)),
         body: OrientationBuilder(builder: (_, orientation) {
           return Padding(
             padding: orientation == Orientation.landscape ? EdgeInsets.only(right: 24) : EdgeInsets.zero,

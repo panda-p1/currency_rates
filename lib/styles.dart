@@ -48,3 +48,8 @@ class ConfigStyles {
   static double arrowIconSize = 25;
   static double arrowSplashRadius = 16;
 }
+
+class AddTickerStyles {
+  static double fontSize = 30;
+  static double buttonSize = 16;
+}

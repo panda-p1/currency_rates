@@ -1,3 +1,4 @@
+import 'package:currencies_pages/constants.dart';
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -7,10 +8,18 @@ abstract class LocalDataState extends Equatable {
   List<Object> get props => [];
 }
 
+
 class LocalDataInitState extends LocalDataState {
   LocalDataInitState();
   @override
   List<Object> get props => [];
+}
+
+class AvailableToAddPairs extends LocalDataState {
+  final List<Currency_Pairs> pairs;
+  AvailableToAddPairs({required this.pairs});
+  @override
+  List<Object> get props => [pairs];
 }
 
 class ThemeLoading extends LocalDataState {
@@ -45,5 +54,6 @@ class LocalCurrencies extends LocalDataState {
   final Currencies currencies;
   LocalCurrencies({required this.currencies});
 }
+
 
 class ConnectionResumed extends LocalDataState {}

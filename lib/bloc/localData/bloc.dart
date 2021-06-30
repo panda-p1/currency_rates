@@ -1,4 +1,5 @@
 import 'package:currencies_pages/api/localData.dart';
+import 'package:currencies_pages/api/websocket.dart';
 import 'package:currencies_pages/bloc/localData/states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -19,6 +20,17 @@ class LocalDataBloc extends Bloc<LocalDataEvent, LocalDataState> {
   LocalDataBloc({required this.localDataRepo}) : super(LocalDataInitState());
   @override
   mapEventToState(event) async* {
+    if(event is RemovePair) {
+      NotificationController.getInstance().confirmedCloseConnection([event.pair]);
+    }
+    if(event is AddPair) {
+      NotificationController.getInstance().addPair(event.pair);
+      await localDataRepo.addPair(event.pair);
+    }
+    if(event is GetAvailableToAddPairs) {
+      final pairs = await localDataRepo.getAvailableToAddPairs();
+      yield AvailableToAddPairs(pairs: pairs);
+    }
     if(event is DecreaseDelay) {
       try {
         final delay = await localDataRepo.changeDelay('-');

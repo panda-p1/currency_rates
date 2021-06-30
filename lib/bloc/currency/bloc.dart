@@ -12,8 +12,36 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
 
   @override
   Stream<CurrenciesState> mapEventToState(CurrenciesEvents event,) async* {
-    yield CurrenciesLoading();
     switch(event) {
+      case CurrenciesEvents.initGetRate:
+        try {
+          yield CurrenciesLoading();
+          final currencies = await currencyRepo.getRates(3);
+          yield CurrenciesLoaded(currencies: currencies);
+        } on TimeoutException {
+          try {
+            print('timeout exception');
+            final currencies = await LocalDataProvider().getLocalCurrencies();
+            yield LocalCurrenciesLoaded(currencies: currencies);
+          } catch (e) {
+            print(e);
+            yield LocalCurrenciesError();
+          }
+        } on SocketException {
+          try {
+            print('timeout exception');
+            final currencies = await LocalDataProvider().getLocalCurrencies();
+            yield LocalCurrenciesLoaded(currencies: currencies);
+          } catch (e) {
+            print(e);
+            yield LocalCurrenciesError();
+          }
+        }
+        catch (e) {
+          print('get tree error -------------------');
+          print(e);
+        }
+        break;
       case CurrenciesEvents.getRate:
         try {
           final currencies = await currencyRepo.getRates(3);

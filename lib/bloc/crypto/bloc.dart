@@ -12,6 +12,15 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
 
   @override
   Stream<CryptoState> mapEventToState(event) async* {
+    if(event is CheckIfObjIsEmpty) {
+      final isEmpty = notifCtrl.isEmpty();
+      if(isEmpty) {
+        yield CryptoEmpty();
+      } else {
+        final controller = notifCtrl.streamController;
+        yield CryptoLoaded(streamController: controller, confirmationDetails: []);
+      }
+    }
     if(event is CryptoInitConnection) {
       try {
         yield CryptoLoading();
@@ -34,15 +43,19 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       yield CryptoLoading();
       final controller = notifCtrl.streamController;
       final pairs = notifCtrl.closeConnection(event.pair);
+
       yield CryptoLoaded(streamController: controller, confirmationDetails: pairs);
     }
     if(event is NotConfirmedRemovePair) {
       final controller = notifCtrl.streamController;
+      final isEmpty = notifCtrl.isEmpty();
+
       yield CryptoLoaded(streamController: controller, confirmationDetails: []);
     }
     if(event is ConfirmedRemovePair) {
       await notifCtrl.confirmedCloseConnection(event.pairs);
       final controller = notifCtrl.streamController;
+      final isEmpty = notifCtrl.isEmpty();
       yield CryptoLoaded(streamController: controller, confirmationDetails: []);
     }
     if(event is GetLocalCrypto) {

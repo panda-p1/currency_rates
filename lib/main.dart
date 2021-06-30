@@ -48,7 +48,7 @@ class _MyAppState extends State<MyApp> {
         home:MultiBlocProvider(
           providers: [
             BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
-            BlocProvider(create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),),
+            BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
             BlocProvider(create: (BuildContext context) => CryptoBloc(),),
           ],
           child: HomeScreen(),)

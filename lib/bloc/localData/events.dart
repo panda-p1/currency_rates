@@ -1,3 +1,4 @@
+import 'package:currencies_pages/constants.dart';
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:currencies_pages/model/crypto.dart';
 import 'package:equatable/equatable.dart';
@@ -51,4 +52,23 @@ class GetLocalCurrencies extends LocalDataEvent {
 class ReturnConnectionBody extends LocalDataEvent {
   @override
   List<Object> get props => [];
+}
+
+class GetAvailableToAddPairs extends LocalDataEvent {
+  @override
+  List<Object> get props => [];
+}
+
+class AddPair extends LocalDataEvent {
+  final Currency_Pairs pair;
+  AddPair({required this.pair});
+  @override
+  List<Object> get props => [pair];
+}
+
+class RemovePair extends LocalDataEvent {
+  final Currency_Pairs pair;
+  RemovePair({required this.pair});
+  @override
+  List<Object> get props => [pair];
 }

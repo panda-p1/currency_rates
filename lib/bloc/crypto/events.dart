@@ -51,3 +51,8 @@ class RetryConnection extends CryptoEvent {
   List<Object> get props => [];
 }
 
+class CheckIfObjIsEmpty extends CryptoEvent {
+  @override
+  List<Object> get props => [];
+}
+

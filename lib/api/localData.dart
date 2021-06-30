@@ -42,15 +42,33 @@ abstract class LocalDataRepo {
   Future<Null> removePair(Currency_Pairs pair);
   Future<List<Currency_Pairs>> getChosenPairs();
   Future<Null> saveDefaultPairs();
+  Future<Null> addPair(Currency_Pairs pair);
+  Future<List<Currency_Pairs>> getAvailableToAddPairs();
 }
 
 class LocalDataProvider implements LocalDataRepo {
-
+  Future<List<Currency_Pairs>> getAvailableToAddPairs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
+    final pairs = pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
+    return Currency_Pairs.values.where((element) => !pairs.contains(element)).toList();
+  }
+  @override
+  Future<Null> addPair(Currency_Pairs pair) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
+    final pairs = pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
+    pairs.insert(0, pair);
+    prefs.setString('chosenPairs', jsonEncode(pairs.map((e) => getValueAfterDot(e)).toList()));
+  }
   @override
   Future<Null> removePair(Currency_Pairs pair) async {
     final prefs = await SharedPreferences.getInstance();
-    final pairs = jsonDecode(prefs.getString('chosenPairs')!) as List;
+    final pairs = await getChosenPairs();
+    print(pairs);
     pairs.removeWhere((element) => element == pair);
+    print(pairs);
+
     prefs.setString('chosenPairs', jsonEncode(pairs.map((e) => getValueAfterDot(e)).toList()));
   }
 
@@ -66,16 +84,17 @@ class LocalDataProvider implements LocalDataRepo {
   Future<List<Currency_Pairs>> getChosenPairs() async {
     final prefs = await SharedPreferences.getInstance();
     final pairsString = prefs.getString('chosenPairs');
-    // if(pairsString == null) {
+    if(pairsString == null) {
       saveDefaultPairs();
 
       return Currency_Pairs.values
           .where((element) => Default_Currency_Pairs.values.map((e) => getValueAfterDot(e)).toList()
           .contains(getValueAfterDot(element))).toList();
-    // }
+    }
+    final pairsJson = jsonDecode(pairsString) as List;
+    print(pairsJson.map((e) => stringCurPairsToEnum(e)).toList());
 
-    // final pairsJson = jsonDecode(pairsString) as List;
-    // return pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
+    return pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
   }
 
   @override

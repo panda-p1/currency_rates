@@ -1,3 +1,4 @@
 enum CurrenciesEvents {
   getRate,
+  initGetRate
 }

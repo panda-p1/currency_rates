@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:core';
 import 'dart:math';
 
+import 'package:reorderables/reorderables.dart';
+import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/crypto/bloc.dart';
 import 'package:currencies_pages/bloc/crypto/events.dart';
 import 'package:currencies_pages/bloc/crypto/states.dart';
@@ -18,11 +19,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
-import 'package:multiple_stream_builder/multiple_stream_builder.dart';
 
 import '../constants.dart';
 import '../styles.dart';
 import '../tools.dart';
+import 'add_ticker_screen.dart';
 import 'config_screen.dart';
 
 double degToRad(double deg) => deg * (pi / 180.0);
@@ -76,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   ScrollController _scrollController = ScrollController();
   @override
   void initState() {
-    _loadRates();
+    _initRates();
     _initCryptoWebSocket();
     WidgetsBinding.instance!.addObserver(this);
 
@@ -104,7 +105,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           .animate(controller);
     super.initState();
   }
-
+  _initRates() {
+    context.read<CurrenciesBloc>().add(CurrenciesEvents.initGetRate);
+  }
   _loadRates() {
     context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
   }
@@ -126,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   Icons.settings,
                 ),
                 onPressed: () async {
+                  isEditingMode.value = false;
                   final delay1 = await Navigator.push(context, MaterialPageRoute(builder: (context) =>
                       BlocProvider.value(
                         value: BlocProvider.of<LocalDataBloc>(context),
@@ -175,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
               Expanded(
                 child: BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
+
                   if(!_isInForeground) {
                     if(state is CurrenciesLoaded) {
                       return _bodyUI(state.currencies);
@@ -183,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                       return _bodyUI(state.currencies);
                     }
                   }
+
                   if(state is CurrenciesLoaded) {
                     context.read<LocalDataBloc>().add(StoreCurrencies(currencies: state.currencies));
                     controller.duration = Duration(milliseconds: (state.currencies.delay * 1000).toInt());
@@ -247,11 +253,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           if(state is CryptoError) {
             return Container();
           }
+          if(state is CryptoLoading) {
+            return CryptoLoading(styles: PortraitStyles(),);
+          }
           if(state is LocalCryptoLoaded) {
             return _localCryptoLoaded(state.cryptoList);
           }
           if(state is CryptoLoaded) {
             return _cryptoLoaded(state.streamController, state.confirmationDetails);
+          }
+          if(state is CryptoEmpty) {
+            return _banner();
           }
           return Container();
         });
@@ -310,8 +322,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
-              child:Text(succeedTime, style: TextStyle(fontSize: SucceedDatetime.fontSize)),
+              padding: const EdgeInsets.only(left: 16),
+              child:
+              Text(succeedTime, style: TextStyle(fontSize: SucceedDatetime.fontSize)),
             ),
 
             Spacer(),
@@ -320,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               animation: animation,
               builder: (_, snapshot) {
                 return Padding(
-                  padding: const EdgeInsets.only(right: 16.0, bottom: 12),
+                  padding: const EdgeInsets.only(right: 16.0),
                   child: CustomPaint(
                     painter: status1 != Statuses.offline
                         ? Painter(sweepAngle: animation.value, color: animation1.value == null ? Colors.green : animation1.value!, status: status1)
@@ -330,6 +343,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 );
               },
             ),
+
+            TextButton(
+              onPressed: () async {
+                isEditingMode.value = false;
+
+                await Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                    BlocProvider(
+                      create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),
+                      child: AddTickerScreen(),
+                    ),
+                ));
+                context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
+
+              },
+               child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
+            )
           ],
         ),
       ),
@@ -348,11 +377,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext alertContext) {
+        final getName = CryptoFromBackendHelper.getNameByCurrencyType;
         return AlertDialog(
           title: Text(d.length > 1 ? 'Warning' : 'Confirmation'),
           content: Text(
               d.length > 1
-                  ? 'Are you sure want to delete this pair? This pairs will be deleted too: $d}'
+                  ? 'Are you sure want to delete ${getName(d[0])} pair? This pairs will be deleted: ${d.skip(1).map((e) => getName(e))}'
                   : 'Are you sure want to delete this pair?'),
           actions: <Widget>[
             TextButton(
@@ -377,8 +407,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     return false;
   }
 
-  Widget _cryptoLoaded(StreamController<Map<Currency_Pairs, Crypto?>> streamController, List<Currency_Pairs> confirmationDetails) {
+  Widget _banner() {
+    return Container(
+        height: 150,
+        child: Center(
+            child: Text('Please add some tickers',
+              style: TextStyle(fontSize: PortraitStyles().currencyNameFontSize()),)
+        )
+    );
+  }
 
+  Widget _cryptoLoaded(
+      StreamController<Map<Currency_Pairs, Crypto?>> streamController,
+      List<Currency_Pairs> confirmationDetails,) {
     // marker
     if(confirmationDetails.length != 0) {
       Future.delayed(Duration.zero, () => _showConfirmDialog(confirmationDetails));
@@ -390,32 +431,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     return StreamBuilder<Map<Currency_Pairs, Crypto?>>(
       stream: streamController.stream,
       builder: (_, snapshot) {
+        // if(isEmpty) {
+        //   return _banner();
+        // }
         if(!snapshot.hasData) {
-          return _cryptoWaiter();
+          context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
+          return CryptoLoading(styles: PortraitStyles(),);
+        }
+        if(snapshot.data!.length == 0) {
+          return _banner();
         }
         final cryptoPairs = snapshot.data!;
-        print(cryptoPairs);
         final items = cryptoPairs.values.map((crypto) {
           if(crypto == null) {
             return null;
           }
           return _orientatedCurrencyWidget(price: crypto.price, name: crypto.name);
         }).toList();
-
         return ValueListenableBuilder(
           valueListenable: orientationUI,
           builder: (_, orientation, __) {
             if (orientation == Orientation.portrait) {
               final styles = PortraitStyles();
 
+              final styledItems = items.map<Widget>((e) {
+                if(e == null) {
+                  return _cryptoWaiter();
+                }
+                return e(styles);
+              }).toList();
+
+              var wrap = ReorderableWrap(
+                onReorder: (_,__) => {},
+                children: items.map<Widget>((e) {
+                            if(e == null) {
+                              return _cryptoWaiter();
+                            }
+                            return e(styles);
+                          }).toList(),
+              );
+
               return SingleChildScrollView(
                   child: Column(
-                      children: items.map<Widget>((e) {
-                        if(e == null) {
-                          return _cryptoWaiter();
-                        }
-                        return e(styles);
-                      }).toList()
+                      children: styledItems
                   )
               );
             }
@@ -460,6 +518,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if(mode) IconButton(onPressed: () => _onDeletePair(name), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+
           Expanded(
             child: CurrencyWidget(
               styles: styles,
@@ -469,7 +529,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               currencyName: name,
             ),
           ),
-          if(mode) IconButton(onPressed: () => _onDeletePair(name), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,))
+
+          if(mode) IconButton(onPressed: () => {}, icon: Icon(Icons.format_align_justify_outlined )),
+
         ],
       ),
     );
@@ -577,11 +639,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   @override
   void dispose() {
     print('dispose');
-    // cryptoControllers.forEach((element) {
-    //   element.close();
-    // });
-    super.dispose();
+    controller.dispose();
     WidgetsBinding.instance!.removeObserver(this);
+    super.dispose();
+
   }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -597,6 +658,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     });
   }
 }
+
+class CryptoLoading extends StatefulWidget {
+  final CurrencyStyles styles;
+  const CryptoLoading({Key? key, required this.styles}) : super(key: key);
+
+  @override
+  _CryptoLoadingState createState() => _CryptoLoadingState();
+}
+
+class _CryptoLoadingState extends State<CryptoLoading> {
+  String dots = '.';
+  late Timer _timer;
+
+  @override
+  void initState() {
+    _timer = Timer.periodic(const Duration(milliseconds: 300), (t) {
+      setState(() {
+        dots = dots.length == 3 ? '.' : dots + '.';
+      });
+    });
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.styles.currencyWidgetHeight(),
+      child: Center(child: Text('Loading ' + dots, style: TextStyle(fontSize: widget.styles.currencyNameFontSize()),),),
+    );
+  }
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+}
+
 
 class Painter extends CustomPainter {
 
@@ -787,5 +885,4 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
           ),
         );
   }
-
 }

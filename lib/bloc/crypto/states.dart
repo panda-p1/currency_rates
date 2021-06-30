@@ -46,3 +46,8 @@ class CryptoRetryConnection extends CryptoState {
   @override
   List<Object> get props => [cryptoList];
 }
+
+class CryptoEmpty extends CryptoState {
+  @override
+  List<Object> get props => [];
+}
