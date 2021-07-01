@@ -1,5 +1,12 @@
 const DEFAULT_DELAY = 4.0;
 
+const double heightForSignal = 50;
+
+enum Modal_RequestType {
+  local,
+  internet
+}
+
 enum Price_Changes {
   equal,
   increased,

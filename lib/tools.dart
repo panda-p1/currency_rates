@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'constants.dart';
 import 'package:currencies_pages/model/crypto.dart';
 
@@ -42,6 +44,8 @@ class CryptoFromBackendHelper {
     return Crypto(name: name, price: price, type: type);
   }
 }
+
+double degToRad(double deg) => deg * (pi / 180.0);
 
 String getValueAfterDot(el) {
   return el.toString().substring(el.toString().indexOf('.') + 1);

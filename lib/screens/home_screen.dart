@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:core';
-import 'dart:math';
 import 'dart:ui';
 
+import 'package:currencies_pages/widgets/bottom_circle_loader.dart';
+import 'package:currencies_pages/widgets/crypto_loader.dart';
+import 'package:currencies_pages/widgets/currency_widget.dart';
+import 'package:currencies_pages/widgets/scroll_notification_listener.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/crypto/bloc.dart';
@@ -14,7 +17,6 @@ import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/model/crypto.dart';
-import 'package:currencies_pages/model/currencies.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +29,6 @@ import '../tools.dart';
 import 'add_ticker_screen.dart';
 import 'config_screen.dart';
 
-double degToRad(double deg) => deg * (pi / 180.0);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -36,22 +37,6 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-const double _heightForSignal = 50;
-
-class StreamWidgetBuilder {
-  Widget? widget;
-  void init() {
-    widget = Container();
-  }
-  void addStreamBuilder() {
-
-  }
-}
-
-enum Modal_RequestType {
-  local,
-  internet
-}
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
 
@@ -65,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   String succeedTime = '';
   Statuses lastStatus = Statuses.online;
   bool topLoading = false;
-  double _signalHeight = _heightForSignal;
+  double _signalHeight = heightForSignal;
 
   List<ValueNotifier<Crypto>> streamsNotifiers = [];
 
@@ -147,8 +132,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     return TextButton(
                       onPressed: () {isEditingMode.value = !mode;},
                       child: Text(mode ? 'Done' : 'Edit', style: TextStyle(color: Colors.blue[400]),),
-                    );}
-                  ),
+                    );
+                  }),
             ],
           ),
         ),
@@ -168,13 +153,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             children: [
               topLoading
                   ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: CircularProgressIndicator(),)
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: CircularProgressIndicator(),)
                   : ValueListenableBuilder<double>(
-                builder: (context, double value, child) {
-                  return SizedBox(height: value);
-                }, valueListenable: _topLoaderHeight,
-              ),
+                      builder: (context, double value, child) {
+                        return SizedBox(height: value);
+                      }, valueListenable: _topLoaderHeight,
+                  ),
               BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
                   print('----------------------------------------------------------------------');
                   print(state);
@@ -700,8 +685,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  MyNotificationListener _notifListener({required Widget child}) {
-    return MyNotificationListener(
+  ScrollNotificationListener _notifListener({required Widget child}) {
+    return ScrollNotificationListener(
       child: child,
       stopController: () {controller.stop();},
       setLoadingTrue: () {
@@ -747,336 +732,5 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     setState(() {
       _isInForeground = state == AppLifecycleState.resumed;
     });
-  }
-}
-
-class MyNotificationListener extends StatefulWidget {
-  final Widget child;
-  final Function setLoadingTrue;
-  final Function stopController;
-  const MyNotificationListener({Key? key, required this.child, required this.stopController, required this.setLoadingTrue}) : super(key: key);
-
-  @override
-  _MyNotificationListenerState createState() => _MyNotificationListenerState();
-}
-
-class _MyNotificationListenerState extends State<MyNotificationListener> {
-  ScrollController _scrollController = ScrollController();
-  bool dropped = false;
-  double yScrollPosition = 0;
-  double _signalHeight = _heightForSignal;
-
-  @override
-  void initState() {
-    _scrollController.addListener(() {
-      if(_scrollController.hasClients) {
-        Future.delayed(Duration.zero,() {if(_scrollController.position.pixels <= 0 && !dropped) {
-          yScrollPosition = - _scrollController.position.pixels;
-        }});
-      }
-
-    });
-    super.initState();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return NotificationListener(
-      onNotification: _onScroll,
-      child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: BouncingScrollPhysics(),
-          child: widget.child
-      ),
-    );
-  }
-  bool _onScroll(scrollNotification) {
-    if(scrollNotification is ScrollEndNotification) {
-      dropped = false;
-    }
-    if(scrollNotification is ScrollUpdateNotification) {
-      if(scrollNotification.dragDetails == null) {
-        if(_scrollController.position.pixels < 0 && scrollNotification.scrollDelta! > 0) {
-          dropped = true;
-        }
-        if(yScrollPosition > _signalHeight) {
-          yScrollPosition = 0;
-          widget.setLoadingTrue();
-          // setState(() {
-          //   topLoading = true;
-          // });
-          Future.delayed(Duration(seconds: 1), () async {
-            // context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
-          });
-          widget.stopController();
-          // controller.stop();
-        }
-      }
-    }
-    return false;
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-}
-
-
-class CryptoLoader extends StatefulWidget {
-  final CurrencyStyles styles;
-  const CryptoLoader({Key? key, required this.styles}) : super(key: key);
-
-  @override
-  _CryptoLoadingState createState() => _CryptoLoadingState();
-}
-
-class _CryptoLoadingState extends State<CryptoLoader> {
-  String dots = '.';
-  late Timer _timer;
-
-  @override
-  void initState() {
-    _timer = Timer.periodic(const Duration(milliseconds: 300), (t) {
-      setState(() {
-        dots = dots.length == 3 ? '.' : dots + '.';
-      });
-    });
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: widget.styles.currencyWidgetHeight(),
-      child: Center(child: Text('Loading ' + dots, style: TextStyle(fontSize: widget.styles.currencyNameFontSize()),),),
-    );
-  }
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-}
-
-
-class Painter extends CustomPainter {
-
-  final double sweepAngle;
-  final Color color;
-  final Statuses status;
-  Painter({required this.sweepAngle, required this.color, required this.status});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..strokeWidth = RingStyles.ringWidth   // 1.
-      ..style = PaintingStyle.stroke   // 2.
-      ..color = color;   // 3.
-
-    final textStyle = TextStyle(
-      color: color,
-      fontSize: RingStyles.ringPercentTextSize,
-    );
-    final textStyle1 = TextStyle(
-      color: Colors.grey,
-      fontSize: RingStyles.ringStatusTextSize,
-    );
-    final textSpan = TextSpan(
-      // text: (sweepAngle/3.6).floor().toString(),
-      style: textStyle,
-    );
-    final textSpan1 = TextSpan(
-      // text: status.toString().substring(status.toString().indexOf('.') + 1),
-      style: textStyle1,
-    );
-    final textPainter = TextPainter(
-      text: textSpan,
-      textDirection: TextDirection.ltr,
-    );
-    final textPainter1 = TextPainter(
-      text: textSpan1,
-      textDirection: TextDirection.ltr,
-    );
-    textPainter1.layout(
-      minWidth: 0,
-      maxWidth: size.width,
-    );
-    textPainter.layout(
-      minWidth: 0,
-      maxWidth: size.width,
-    );
-
-    final xCenter = (size.width - textPainter.width) / 2;
-    final yCenter = (size.height - textPainter.height) / 2 - 4;
-    final x1Center = (size.width - textPainter1.width) / 2;
-    final y1Center = (size.height - textPainter1.height) / 2;
-
-    final offset = Offset(xCenter, yCenter);
-    final offset1 = Offset(x1Center, y1Center + 7);
-
-    textPainter.paint(canvas, offset);
-    textPainter1.paint(canvas, offset1);
-
-    final Paint paint1 = Paint()
-      ..strokeWidth = RingStyles.ringWidth   // 1.
-      ..style = PaintingStyle.stroke   // 2.
-      ..color = status == Statuses.offline ? Colors.red : RingStyles.backgroundRingColor;
-
-    final path1 = Path()
-      ..arcTo(   // 4.
-          Rect.fromCenter(
-            center: Offset(size.height / 2, size.width / 2),
-            height: size.height,
-            width: size.width,
-          ),   // 5.
-          0,
-          2 * pi- 0.001, // 7.
-          false);
-
-    final path = Path()
-      ..arcTo(   // 4.
-          Rect.fromCenter(
-            center: Offset(size.height / 2, size.width / 2),
-            height: size.height,
-            width: size.width,
-          ),   // 5.
-          degToRad(180),   // 6.
-          degToRad(sweepAngle), // 7.
-          false);
-    if(status != Statuses.offline) {
-
-    }
-    canvas.drawPath(path1, paint1);   // 8.
-
-    canvas.drawPath(path, paint);   // 8.
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    // bad, but okay for example
-    return true;
-  }
-}
-
-class CurrencyWidget extends StatefulWidget {
-  final String currencyName;
-  final String currencyPrice;
-  final Grad_Direction? gradDirection;
-  final CurrencyStyles styles;
-  final Color? initColor;
-  final Color finalColor;
-  final bool animated;
-  final bool? deleteIcon;
-  final Function? onDeleteIconPress;
-  CurrencyWidget({Key? key,
-    this.deleteIcon, this.onDeleteIconPress,
-    required this.finalColor,
-    required this.animated, required this.currencyName,
-    required this.currencyPrice, this.gradDirection,
-    required this.styles, this.initColor}) : super(key: key);
-  @override
-  State<CurrencyWidget> createState() => _CurrencyWidgetState();
-}
-class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
-  late Animation<Color?> animationColor;
-  AnimationController? controller;
-
-  @override
-  void initState() {
-    if(widget.animated) {
-      controller = AnimationController(
-        vsync: this,
-        duration: Duration(milliseconds: 2000),);
-
-      animationColor = ColorTween(begin: widget.initColor, end: widget.finalColor)
-          .animate(controller!);
-    }
-
-    super.initState();
-  }
-  @override
-  void dispose() {
-    if(controller != null) {
-      controller!.dispose();
-    }
-    super.dispose();
-  }
-  @override
-  void didUpdateWidget(oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if(widget.animated) {
-      this.updateAnimation();
-    }
-  }
-
-  void updateAnimation() {
-    setState(() {
-      animationColor = ColorTween(begin: widget.initColor, end: widget.finalColor)
-          .animate(controller!);
-    });
-
-    if(controller!.status == AnimationStatus.completed || controller!.status == AnimationStatus.dismissed ||
-      controller!.status == AnimationStatus.forward
-    ) {
-      controller!.value = 0;
-      controller!.forward();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-      return SizedBox(
-        height: widget.styles.currencyWidgetHeight(),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: _currencyName()
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                    widget.currencyPrice.toString(),
-                    style: TextStyle(
-                        color: widget.finalColor,
-                        fontSize: widget.styles.currencyPriceFontSize())),
-                // Text(
-                //     widget.currencyPrice.toString(),
-                //     style: TextStyle(
-                //         color: widget.finalColor,
-                //         fontSize: widget.styles.currencyPriceFontSize())),
-                if(widget.gradDirection != null)
-                  widget.gradDirection == Grad_Direction.down
-                      ? Icon(Icons.arrow_drop_down_outlined, size: widget.styles.iconsSize(),)
-                      : Icon(Icons.arrow_drop_up_outlined, size: widget.styles.iconsSize(),)
-              ],
-            ),
-          ],
-        ),
-      );
-  }
-
-  Widget _currencyName() {
-    return Stack(
-      clipBehavior: Clip.none, children: [
-        Text(
-      widget.currencyName,
-      style: TextStyle(
-          fontSize: widget.styles.currencyNameFontSize(),
-          color: widget.styles.currencyNameFontColor()),),
-        if(widget.deleteIcon != null && widget.deleteIcon!)
-          Positioned(
-            right: -20,
-            top: -15,
-            child: IconButton(
-              icon: Icon(Icons.remove_circle_sharp, color: Colors.red, size: 30),
-              onPressed: () => widget.onDeleteIconPress!(),))
-      ],
-    );
   }
 }
