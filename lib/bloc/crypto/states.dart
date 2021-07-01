@@ -10,19 +10,21 @@ abstract class CryptoState extends Equatable {
 }
 
 class CryptoInitState extends CryptoState {
-  CryptoInitState();
+  @override
+  List<Object> get props => [];
+}
+
+class CryptoClosingState extends CryptoState {
   @override
   List<Object> get props => [];
 }
 
 class CryptoLoading extends CryptoState {
-  CryptoLoading();
   @override
   List<Object> get props => [];
 }
 
 class CryptoError extends CryptoState {
-  CryptoError();
   @override
   List<Object> get props => [];
 }
@@ -40,7 +42,7 @@ class CryptoModal extends CryptoState {
   @override
   List<Object> get props => [confirmationDetails, requestFrom];
 }
-class CryptoEmptyState extends CryptoState {
+class CryptoEmptyState extends CryptoState { // created to change modal state
   @override
   List<Object> get props => [];
 }
@@ -61,3 +63,4 @@ class CryptoEmpty extends CryptoState {
   @override
   List<Object> get props => [];
 }
+

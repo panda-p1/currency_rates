@@ -2,6 +2,7 @@ import 'dart:async' show Future, StreamController;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:currencies_pages/bloc/crypto/states.dart';
 import 'package:currencies_pages/model/crypto.dart';
 
 import '../constants.dart';
@@ -88,7 +89,6 @@ class NotificationController {
     for(var pair in pairss) {
       if(channels.containsKey(pair)) {
         await channels[pair]!.close();
-        channels.remove(pair);
       }
 
       pairs.removeWhere((element) => pairss.contains(element));
@@ -117,35 +117,39 @@ class NotificationController {
       }
     }
   }
+
   _addToBeginningOfObj(Currency_Pairs pair) {
     obj = {...{pair: null},...obj};
+  }
+  _onDoneChannel(Currency_Pairs pair) {
+    if(channels[pair] != null) {
+      if(channels[pair]!.closeCode == 1002) {
+        streamController.addError(CryptoError());
+      }
+    }
+
+    channels.remove(pair);
+
+    for (var chain in currencyChains[pair]!) {
+      obj.remove(chain);
+    }
   }
   _addListener(Currency_Pairs pair) {
     if(!pairsUrls.containsKey(pair)) {
       throw Exception('pairsUrls does not contain this pair');
     }
-
+    print(pair);
     if(pair == Currency_Pairs.dogeusd || pair == Currency_Pairs.ethusd) {
       // ignore: cancel_subscriptions
-      final listen = channels[pair]!.listen((streamData) {
+      channels[pair]!.listen((streamData) {
         final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
         obj[crypto.type] = crypto;
         streamController.add(obj);
-      });
-      listen.onError((error) {
-        print('listenOnerror');
-        print(error);
-      });
-      listen.onDone(() {
-        for (var chain in currencyChains[pair]!) {
-          obj.remove(chain);
-        }
-      });
+      }).onDone(() => _onDoneChannel(pair));
       return;
     }
 
-    // ignore: cancel_subscriptions
-    final listen = channels[pair]!.listen((streamData) {
+    channels[pair]!.listen((streamData) {
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
       if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
@@ -181,25 +185,44 @@ class NotificationController {
       }
       streamController.add(obj);
       return;
-    });
-    listen.onDone(() {
-      for (var chain in currencyChains[pair]!) {
-        obj.remove(chain);
+    }).onDone(() => _onDoneChannel(pair));
+  }
+  _initPairs(List<Currency_Pairs> pairss) async {
+
+    pairs.addAll(pairss.reversed);
+
+    final Map<Currency_Pairs, String> channelPairs = Map.from(pairsUrls)..removeWhere((k, v) => !pairss.contains(k));
+
+    final websockets = await _initConnectWs(channelPairs);
+
+    pairss.forEach((pair) {
+      final requiredToStartListenPairs = reversedCurrencyChain[pair]!;
+      for(var index = 0; index < requiredToStartListenPairs.length; index++) {
+        final channelName = requiredToStartListenPairs[index];
+        if (!channels.keys.contains(channelName)) {
+          channels.addEntries([MapEntry(channelName, websockets[index])]);
+        }
       }
     });
-    listen.onError((error) {
-      print('listenOnerror');
-      print(error);
+    print('channels');
+    print(channels);
+    channels.forEach((key, value) {
+      _addListener(key);
     });
   }
-
   initWebSocketConnection() async {
     print("connecting...");
     final chosenPairs = await LocalDataProvider().getChosenPairs();
     obj = {for (var pair in chosenPairs) pair: null};
+    //@TODO Implement PromiseAll instead await several times
+    // _initPairs(chosenPairs);
     for(var pair in chosenPairs.reversed) {
       await addPair(pair);
     }
+  }
+  
+  Future<List<WebSocket>> _initConnectWs(Map<Currency_Pairs, String> pairs) async {
+    return await Future.wait(pairs.values.map((e) => WebSocket.connect(e)));
   }
 
   Future<WebSocket> connectWs(MapEntry<Currency_Pairs, String> pair) async {

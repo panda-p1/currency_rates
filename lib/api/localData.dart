@@ -56,6 +56,16 @@ class LocalDataProvider implements LocalDataRepo {
     pairsJson.removeAt(oldIdx);
     pairsJson.insert(newIdx, pairString);
     prefs.setString('chosenPairs', jsonEncode(pairsJson));
+
+    final currencies = await getLocalCurrencies();
+    final List<MapEntry<Currency_Pairs, Crypto?>> list = [];
+    currencies.forEach((k,v) => list.add(MapEntry(k,v)));
+    final oldIndex = currencies.keys.toList().indexOf(pair);
+    list.removeAt(oldIndex);
+    list.insert(newIdx, MapEntry(pair, currencies[pair]));
+    final Map<Currency_Pairs, Crypto?> newCurrencies = {};
+    newCurrencies.addEntries(list);
+    await storeCurrencies(newCurrencies);
   }
   Future<List<Currency_Pairs>> getAvailableToAddPairs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -153,8 +163,8 @@ class LocalDataProvider implements LocalDataRepo {
       final delay = double.parse(prefs.getString('delay')!);
       return delay;
     } catch (e) {
-      prefs.setString('delay', '20');
-      return 20;
+      prefs.setString('delay', '$DEFAULT_DELAY');
+      return DEFAULT_DELAY;
     }
   }
   @override

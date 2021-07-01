@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:connectivity/connectivity.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/bloc/localData/states.dart';
@@ -19,10 +22,36 @@ class AddTickerScreen extends StatefulWidget {
 
 class _AddTickerScreenState extends State<AddTickerScreen> {
   Map<Currency_Pairs, bool> pairsAdded = {};
+  bool connected = true;
+  late final StreamSubscription<ConnectivityResult> internetSubscription;
   @override
   void initState() {
+    initConnect();
     super.initState();
+    internetSubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      if(result == ConnectivityResult.none) {
+        setState(() {
+          connected = false;
+        });
+      } else {
+        setState(() {
+          connected = true;
+        });
+      }
+      // Got a new connectivity status!
+    });
     context.read<LocalDataBloc>().add(GetAvailableToAddPairs());
+  }
+  initConnect() async {
+    final isDeviceConnectedToInternet = await Connectivity().checkConnectivity() != ConnectivityResult.none;
+    setState(() {
+      connected = isDeviceConnectedToInternet;
+    });
+  }
+  @override
+  void dispose() {
+    internetSubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -56,8 +85,10 @@ class _AddTickerScreenState extends State<AddTickerScreen> {
 
   Widget _availablePairsView(List<Currency_Pairs> pairs) {
     if(pairs.isEmpty) {
-      return Center(child: Text('You have added all available currencies', style: TextStyle(fontSize: 40),),);
+      return Center(child: Text("You've added all available currencies", textAlign: TextAlign.center, style: TextStyle(fontSize: 40),),);
     }
+    final Color? buttonColor = connected ? null : Colors.grey;
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView(
@@ -72,11 +103,11 @@ class _AddTickerScreenState extends State<AddTickerScreen> {
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.all(Radius.circular(10)),
-                    color: !pairsAdded[pair]! ? Colors.blue : Colors.red
+                    color: buttonColor != null ? buttonColor : !pairsAdded[pair]! ? Colors.blue : Colors.red
                   ),
                   child: Center(
                     child: TextButton(
-                      onPressed: () => _onPairClick(pair),
+                      onPressed: () => connected ? _onPairClick(pair) : null,
                       child: !pairsAdded[pair]! ? _styledTextButton('Add') : _styledTextButton('undo'),
                     ),
                   ),

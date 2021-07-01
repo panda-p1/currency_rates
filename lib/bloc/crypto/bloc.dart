@@ -18,7 +18,11 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     print(event);
     if(event is ReorderPair) {
       notifCtrl.reorderPair(event.newIdx, event.pair);
-      localDataProvider.reorderPairs(event.newIdx, event.pair);
+    }
+    if(event is LocalReorderPair) {
+      await localDataProvider.reorderPairs(event.newIdx, event.pair);
+      final reorderedCurrencies = await localDataProvider.getLocalCurrencies();
+      yield LocalCryptoLoaded(currencies: reorderedCurrencies);
     }
     if(event is CheckIfObjIsEmpty) {
       final isEmpty = notifCtrl.isEmpty();
@@ -55,22 +59,23 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         pairs = notifCtrl.showConnections(event.pair);
       }
       if(event.requestFrom == Modal_RequestType.local) {
-        pairs = await localDataProvider.showConnections(event.pair);
+        pairs = [event.pair];
       }
       yield CryptoModal(confirmationDetails: pairs!, requestFrom: event.requestFrom);
     }
     if(event is NotConfirmedRemovePair) {
       yield CryptoEmptyState();
     }
-
     if(event is ConfirmedRemovePair) {
       yield CryptoEmptyState();
+
       final pairs = event.pairs;
 
       if(event.requestFrom == Modal_RequestType.internet) {
         for(var pair in pairs) {
           await localDataProvider.removePair(pair);
         }
+
         await notifCtrl.confirmedCloseConnection(pairs);
         final controller = notifCtrl.streamController;
         yield CryptoLoaded(streamController: controller);
@@ -94,8 +99,11 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       try {
         print('retry connection');
         await notifCtrl.initWebSocketConnection();
+        final controller = notifCtrl.streamController;
+        yield CryptoLoaded(streamController: controller);
       } catch(e) {
         print(e);
+        print('retry connection error');
         try {
           final currencies = await localDataProvider.getLocalCurrencies();
           yield LocalCryptoLoaded(currencies: currencies);

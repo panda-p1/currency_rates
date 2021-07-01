@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:core';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:reorderables/reorderables.dart';
 import 'package:currencies_pages/api/localData.dart';
@@ -58,14 +59,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   StreamController<Map<Currency_Pairs, Crypto?>>? cryptoController;
 
+  Timer? retryConnectionTimer;
+
   Map<Currency_Type, num> previousCurrencies = {};
   String succeedTime = '';
   Statuses lastStatus = Statuses.online;
-  double _signalHeight = _heightForSignal;
   bool topLoading = false;
-
-  double yScrollPosition = 0;
-  bool dropped = false;
+  double _signalHeight = _heightForSignal;
 
   List<ValueNotifier<Crypto>> streamsNotifiers = [];
 
@@ -79,21 +79,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   late Animation<double> animation;
   late Animation<Color?> animation1;
   late AnimationController controller;
-  ScrollController _scrollController = ScrollController();
   @override
   void initState() {
     _initRates();
     _initCryptoWebSocket();
     WidgetsBinding.instance!.addObserver(this);
 
-    _scrollController.addListener(() {
-      if(_scrollController.hasClients) {
-        if(_scrollController.position.pixels <= 0 && !dropped) {
-          yScrollPosition = - _scrollController.position.pixels;
-        }
-      }
-
-    });
     controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 5000),);
@@ -185,11 +176,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 }, valueListenable: _topLoaderHeight,
               ),
               BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
-                if(state is CryptoModal) {
-                  Future.delayed(Duration.zero, () => _showConfirmDialog(state.confirmationDetails, state.requestFrom));
-                }
-                return Container();
-              }, buildWhen: (state1, state2) => state2 is CryptoModal || state2 is CryptoEmptyState,),
+                  print('----------------------------------------------------------------------');
+                  print(state);
+                  if(state is CryptoClosingState) {
+                    return Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Center(child: SizedBox(width:40,height:40,child: CircularProgressIndicator()),)
+                          ),
+                        )
+                      ],
+                    );
+                  }
+                  if(state is CryptoModal) {
+                    Future.delayed(Duration.zero, () => _showConfirmDialog(state.confirmationDetails, state.requestFrom));
+                  }
+                  return Container();
+                }, buildWhen: (state1, state2) => state2 is CryptoModal || state2 is CryptoEmptyState || state2 is CryptoClosingState,
+              ),
               Expanded(
                 child: BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
                   // if(!_isInForeground) {
@@ -200,20 +207,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   //     return _bodyUI(state.currencies);
                   //   }
                   // }
-                  // @TODO BINANCE WITH RESTAPI BODY
 
                   if(state is CurrenciesLoaded) {
                     // context.read<LocalDataBloc>().add(StoreCurrencies(currencies: state.currencies));
                     controller.duration = Duration(milliseconds: (state.currencies.delay * 1000).toInt());
-                    if(controller.status == AnimationStatus.dismissed) {
-                      controller.forward();
-                    }
-                    if(controller.status == AnimationStatus.completed) {
-                      Future.delayed(Duration.zero, () async {
-                        controller.value = 0;
-                        controller.forward();
-                      });
-                    }
+
                   }
                   return _bodyUI();
 
@@ -245,6 +243,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                       return _footerUI(status: Statuses.offline);
                     }
                     if(state is CryptoLoaded) {
+                      if(controller.status == AnimationStatus.dismissed) {
+                        controller.forward();
+                      }
+                      if(controller.status == AnimationStatus.completed) {
+                        Future.delayed(Duration.zero, () async {
+                          controller.value = 0;
+                          controller.forward();
+                        });
+                      }
                       return _footerUI(status: Statuses.online);
                     }
                     if(state is CryptoError) {
@@ -255,7 +262,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     }
 
                     return Text('unknown footer state');
-                }, buildWhen: (_, state2) => state2 is! CryptoEmptyState && state2 is! CryptoModal,);
+                }, buildWhen: (_, state2) => state2 is! CryptoEmptyState && state2 is! CryptoModal
+                    && state2 is! CryptoEmpty && state2 is! CryptoClosingState
+                );
               })
 
           // BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
@@ -285,6 +294,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
   Widget _bodyUI() {
     return BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
+      if(retryConnectionTimer != null) {
+        retryConnectionTimer = null;
+      }
       print(state);
       if(topLoading) {
         Future.delayed(Duration(seconds: 1), () async {
@@ -301,6 +313,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return CryptoLoader(styles: PortraitStyles(),);
       }
       if(state is LocalCryptoLoaded) {
+
+        retryConnectionTimer = Timer(Duration(seconds: 2), () {
+          context.read<CryptoBloc>().add(RetryConnection());
+        });
+
         return _UI(items: [_localCryptoLoaded(state.currencies)]);
       }
       if(state is CryptoLoaded) {
@@ -310,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return _banner();
       }
       return Container();
-    }, buildWhen: (_,state2) => state2 is! CryptoEmptyState && state2 is! CryptoModal,);
+    }, buildWhen: (_,state2) => state2 is! CryptoEmptyState && state2 is! CryptoModal && state2 is! CryptoClosingState,);
 
   }
 
@@ -502,12 +519,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     return StreamBuilder<Map<Currency_Pairs, Crypto?>>(
       stream: streamController.stream,
       builder: (_, snapshot) {
+        if(snapshot.hasError) {
+          if(snapshot.error is CryptoError) {
+            context.read<CryptoBloc>().add(GetLocalCrypto());
+          }
+          return Container();
+        }
 
         if(!snapshot.hasData) {
           context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
           return CryptoLoader(styles: PortraitStyles(),);
         }
-
         final currencies = snapshot.data!;
         context.read<LocalDataBloc>().add(StoreCurrencies(currencies: currencies));
 
@@ -645,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     final wrap = ReorderableWrap(
                       onReorder: (oldIdx, newIdx) {
                         final pair = currencies.keys.toList()[oldIdx];
-                        context.read<CryptoBloc>().add(ReorderPair(newIdx: newIdx, pair: pair));
+                        context.read<CryptoBloc>().add(LocalReorderPair(newIdx: newIdx, pair: pair));
                       },
                       children: styledItems,
                     );
@@ -678,38 +700,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  NotificationListener _notifListener({required Widget child}) {
-    return NotificationListener(
-      onNotification: _onScroll,
-      child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: BouncingScrollPhysics(),
-          child: child
-      ),
-    );
-  }
-  bool _onScroll(scrollNotification) {
-    if(scrollNotification is ScrollEndNotification) {
-      dropped = false;
-    }
-    if(scrollNotification is ScrollUpdateNotification) {
-      if(scrollNotification.dragDetails == null) {
-        if(_scrollController.position.pixels < 0 && scrollNotification.scrollDelta! > 0) {
-          dropped = true;
-        }
-        if(yScrollPosition > _signalHeight) {
-          yScrollPosition = 0;
-          setState(() {
-            topLoading = true;
-          });
-          Future.delayed(Duration(seconds: 1), () async {
-            context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
-          });
-          controller.stop();
-        }
-      }
-    }
-    return false;
+  MyNotificationListener _notifListener({required Widget child}) {
+    return MyNotificationListener(
+      child: child,
+      stopController: () {controller.stop();},
+      setLoadingTrue: () {
+        setState(() {
+          topLoading = true;
+        });
+      },);
   }
   void _onVerticalDragUpdate(DragUpdateDetails d) {
     if(_topLoaderHeight.value + d.delta.dy > 0) {
@@ -722,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         topLoading = true;
       });
       Future.delayed(Duration(seconds: 1), () async {
-        context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+        // context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
       });
       controller.stop();
     }
@@ -730,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
   @override
   void dispose() {
-    print('dispose');
+    if(retryConnectionTimer != null) retryConnectionTimer!.cancel();
     controller.dispose();
     WidgetsBinding.instance!.removeObserver(this);
     super.dispose();
@@ -750,6 +749,80 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     });
   }
 }
+
+class MyNotificationListener extends StatefulWidget {
+  final Widget child;
+  final Function setLoadingTrue;
+  final Function stopController;
+  const MyNotificationListener({Key? key, required this.child, required this.stopController, required this.setLoadingTrue}) : super(key: key);
+
+  @override
+  _MyNotificationListenerState createState() => _MyNotificationListenerState();
+}
+
+class _MyNotificationListenerState extends State<MyNotificationListener> {
+  ScrollController _scrollController = ScrollController();
+  bool dropped = false;
+  double yScrollPosition = 0;
+  double _signalHeight = _heightForSignal;
+
+  @override
+  void initState() {
+    _scrollController.addListener(() {
+      if(_scrollController.hasClients) {
+        Future.delayed(Duration.zero,() {if(_scrollController.position.pixels <= 0 && !dropped) {
+          yScrollPosition = - _scrollController.position.pixels;
+        }});
+      }
+
+    });
+    super.initState();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener(
+      onNotification: _onScroll,
+      child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: BouncingScrollPhysics(),
+          child: widget.child
+      ),
+    );
+  }
+  bool _onScroll(scrollNotification) {
+    if(scrollNotification is ScrollEndNotification) {
+      dropped = false;
+    }
+    if(scrollNotification is ScrollUpdateNotification) {
+      if(scrollNotification.dragDetails == null) {
+        if(_scrollController.position.pixels < 0 && scrollNotification.scrollDelta! > 0) {
+          dropped = true;
+        }
+        if(yScrollPosition > _signalHeight) {
+          yScrollPosition = 0;
+          widget.setLoadingTrue();
+          // setState(() {
+          //   topLoading = true;
+          // });
+          Future.delayed(Duration(seconds: 1), () async {
+            // context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+          });
+          widget.stopController();
+          // controller.stop();
+        }
+      }
+    }
+    return false;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+}
+
 
 class CryptoLoader extends StatefulWidget {
   final CurrencyStyles styles;
@@ -839,8 +912,10 @@ class Painter extends CustomPainter {
     final yCenter = (size.height - textPainter.height) / 2 - 4;
     final x1Center = (size.width - textPainter1.width) / 2;
     final y1Center = (size.height - textPainter1.height) / 2;
+
     final offset = Offset(xCenter, yCenter);
     final offset1 = Offset(x1Center, y1Center + 7);
+
     textPainter.paint(canvas, offset);
     textPainter1.paint(canvas, offset1);
 
@@ -848,6 +923,7 @@ class Painter extends CustomPainter {
       ..strokeWidth = RingStyles.ringWidth   // 1.
       ..style = PaintingStyle.stroke   // 2.
       ..color = status == Statuses.offline ? Colors.red : RingStyles.backgroundRingColor;
+
     final path1 = Path()
       ..arcTo(   // 4.
           Rect.fromCenter(
@@ -856,7 +932,7 @@ class Painter extends CustomPainter {
             width: size.width,
           ),   // 5.
           0,
-          2*pi- 0.001, // 7.
+          2 * pi- 0.001, // 7.
           false);
 
     final path = Path()

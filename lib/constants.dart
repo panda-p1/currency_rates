@@ -1,3 +1,5 @@
+const DEFAULT_DELAY = 4.0;
+
 enum Price_Changes {
   equal,
   increased,
