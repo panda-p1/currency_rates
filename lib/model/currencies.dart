@@ -1,14 +1,6 @@
 import '../constants.dart';
 import '../tools.dart';
 
-
-
-
-
-
-
-
-
 class Currency {
   final num price;
   final Grad_Direction gradDirection;

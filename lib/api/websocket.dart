@@ -67,7 +67,7 @@ class NotificationController {
 
   Map<Currency_Pairs, WebSocket> channels = {};
 
-  List<Currency_Pairs> closeConnection(Currency_Pairs pair) {
+  List<Currency_Pairs> showConnections(Currency_Pairs pair) {
     return currencyChains[pair]!.where((element) => obj.keys.contains(element)).toList();
   }
 
@@ -86,7 +86,6 @@ class NotificationController {
 
   Future<void> confirmedCloseConnection(List<Currency_Pairs> pairss) async {
     for(var pair in pairss) {
-      LocalDataProvider().removePair(pair);
       if(channels.containsKey(pair)) {
         await channels[pair]!.close();
         channels.remove(pair);
@@ -127,11 +126,17 @@ class NotificationController {
     }
 
     if(pair == Currency_Pairs.dogeusd || pair == Currency_Pairs.ethusd) {
-      channels[pair]!.listen((streamData) {
+      // ignore: cancel_subscriptions
+      final listen = channels[pair]!.listen((streamData) {
         final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
         obj[crypto.type] = crypto;
         streamController.add(obj);
-      }).onDone(() {
+      });
+      listen.onError((error) {
+        print('listenOnerror');
+        print(error);
+      });
+      listen.onDone(() {
         for (var chain in currencyChains[pair]!) {
           obj.remove(chain);
         }
@@ -139,7 +144,8 @@ class NotificationController {
       return;
     }
 
-    channels[pair]!.listen((streamData) {
+    // ignore: cancel_subscriptions
+    final listen = channels[pair]!.listen((streamData) {
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
       if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
@@ -175,10 +181,15 @@ class NotificationController {
       }
       streamController.add(obj);
       return;
-    }).onDone(() {
+    });
+    listen.onDone(() {
       for (var chain in currencyChains[pair]!) {
         obj.remove(chain);
       }
+    });
+    listen.onError((error) {
+      print('listenOnerror');
+      print(error);
     });
   }
 

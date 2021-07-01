@@ -20,7 +20,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
           yield CurrenciesLoaded(currencies: currencies);
         } on TimeoutException {
           try {
-            print('timeout exception');
+            print('timeout exception rest');
             final currencies = await LocalDataProvider().getLocalCurrencies();
             // yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {
@@ -29,7 +29,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
           }
         } on SocketException {
           try {
-            print('timeout exception');
+            print('timeout exception rest');
             final currencies = await LocalDataProvider().getLocalCurrencies();
             // yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {
@@ -48,7 +48,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
           yield CurrenciesLoaded(currencies: currencies);
         } on TimeoutException {
           try {
-            print('timeout exception');
+            print('timeout exception restapi');
             final currencies = await LocalDataProvider().getLocalCurrencies();
             // yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {
@@ -57,7 +57,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
           }
         } on SocketException {
           try {
-            print('timeout exception');
+            print('timeout exception restapi');
             final currencies = await LocalDataProvider().getLocalCurrencies();
             // yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {

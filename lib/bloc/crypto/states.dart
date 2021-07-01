@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:currencies_pages/constants.dart';
+import 'package:currencies_pages/screens/home_screen.dart';
 import 'package:equatable/equatable.dart';
 import 'package:currencies_pages/model/crypto.dart';
 
@@ -28,12 +29,21 @@ class CryptoError extends CryptoState {
 
 class CryptoLoaded extends CryptoState {
   final StreamController<Map<Currency_Pairs, Crypto?>> streamController;
-  final List<Currency_Pairs> confirmationDetails;
-  CryptoLoaded({required this.streamController, required this.confirmationDetails});
+  CryptoLoaded({required this.streamController});
   @override
-  List<Object> get props => [streamController, confirmationDetails];
+  List<Object> get props => [streamController];
 }
-
+class CryptoModal extends CryptoState {
+  final List<Currency_Pairs> confirmationDetails;
+  final Modal_RequestType requestFrom;
+  CryptoModal({required this.confirmationDetails, required this.requestFrom});
+  @override
+  List<Object> get props => [confirmationDetails, requestFrom];
+}
+class CryptoEmptyState extends CryptoState {
+  @override
+  List<Object> get props => [];
+}
 class LocalCryptoLoaded extends CryptoState {
   final Map<Currency_Pairs, Crypto?> currencies;
   LocalCryptoLoaded({required this.currencies});

@@ -1,3 +1,4 @@
+import 'package:currencies_pages/api/websocket.dart';
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:currencies_pages/model/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +44,7 @@ abstract class LocalDataRepo {
   Future<Null> addPair(Currency_Pairs pair);
   Future<List<Currency_Pairs>> getAvailableToAddPairs();
   Future<Null> reorderPairs(int newIdx, Currency_Pairs pair);
+  Future<List<Currency_Pairs>> showConnections(Currency_Pairs pair);
 }
 
 class LocalDataProvider implements LocalDataRepo {
@@ -59,6 +61,7 @@ class LocalDataProvider implements LocalDataRepo {
     final prefs = await SharedPreferences.getInstance();
     final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
     final pairs = pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
+    print('getAvailableToAddPairs $pairs');
     return Currency_Pairs.values.where((element) => !pairs.contains(element)).toList();
   }
   @override
@@ -70,14 +73,22 @@ class LocalDataProvider implements LocalDataRepo {
     prefs.setString('chosenPairs', jsonEncode(pairsJson));
   }
   @override
+  Future<List<Currency_Pairs>> showConnections(Currency_Pairs pair) async {
+    final pairs = await getChosenPairs();
+    return currencyChains[pair]!.where((element) => pairs.contains(element)).toList();
+  }
+  @override
   Future<Null> removePair(Currency_Pairs pair) async {
     final prefs = await SharedPreferences.getInstance();
     final pairs = await getChosenPairs();
-    print(pairs);
-    pairs.removeWhere((element) => element == pair);
-    print(pairs);
+    print('getChosenPairs $pairs');
+    final localCurrencies = await getLocalCurrencies();
 
+    pairs.removeWhere((element) => element == pair);
     prefs.setString('chosenPairs', jsonEncode(pairs.map((e) => getValueAfterDot(e)).toList()));
+
+    localCurrencies.remove(pair);
+    await storeCurrencies(localCurrencies);
   }
 
   @override
@@ -94,14 +105,11 @@ class LocalDataProvider implements LocalDataRepo {
     final pairsString = prefs.getString('chosenPairs');
     if(pairsString == null) {
       saveDefaultPairs();
-
       return Currency_Pairs.values
           .where((element) => Default_Currency_Pairs.values.map((e) => getValueAfterDot(e)).toList()
           .contains(getValueAfterDot(element))).toList();
     }
     final pairsJson = jsonDecode(pairsString) as List;
-    print(pairsJson.map((e) => stringCurPairsToEnum(e)).toList());
-
     return pairsJson.map((e) => stringCurPairsToEnum(e)).toList();
   }
 

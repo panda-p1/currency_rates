@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/api/websocket.dart';
 import 'package:currencies_pages/bloc/crypto/states.dart';
+import 'package:currencies_pages/screens/home_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../constants.dart';
 import 'events.dart';
 
 class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
@@ -22,10 +24,10 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       final isEmpty = notifCtrl.isEmpty();
 
       if(isEmpty) {
-        // yield CryptoEmpty();
+        yield CryptoEmpty();
       } else {
         final controller = notifCtrl.streamController;
-        // yield CryptoLoaded(streamController: controller, confirmationDetails: []);
+        yield CryptoLoaded(streamController: controller);
       }
     }
     if(event is CryptoInitConnection) {
@@ -33,7 +35,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         yield CryptoLoading();
         await notifCtrl.initWebSocketConnection();
         final controller = notifCtrl.streamController;
-        yield CryptoLoaded(streamController: controller, confirmationDetails: []);
+        yield CryptoLoaded(streamController: controller);
       } catch(e) {
         print(e);
         print('crypto error caught');
@@ -42,28 +44,47 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
           yield LocalCryptoLoaded(currencies: currencies);
         } catch (e) {
           print(e);
+          print('crypto error');
           yield CryptoError();
         }
       }
     }
     if(event is CryptoRemovePair) {
-      yield CryptoLoading();
-      final controller = notifCtrl.streamController;
-      final pairs = notifCtrl.closeConnection(event.pair);
-
-      yield CryptoLoaded(streamController: controller, confirmationDetails: pairs);
+      List<Currency_Pairs>? pairs;
+      if(event.requestFrom == Modal_RequestType.internet) {
+        pairs = notifCtrl.showConnections(event.pair);
+      }
+      if(event.requestFrom == Modal_RequestType.local) {
+        pairs = await localDataProvider.showConnections(event.pair);
+      }
+      yield CryptoModal(confirmationDetails: pairs!, requestFrom: event.requestFrom);
     }
     if(event is NotConfirmedRemovePair) {
-      final controller = notifCtrl.streamController;
-      yield CryptoLoaded(streamController: controller, confirmationDetails: []);
+      yield CryptoEmptyState();
     }
+
     if(event is ConfirmedRemovePair) {
-      await notifCtrl.confirmedCloseConnection(event.pairs);
-      final controller = notifCtrl.streamController;
-      yield CryptoLoaded(streamController: controller, confirmationDetails: []);
+      yield CryptoEmptyState();
+      final pairs = event.pairs;
+
+      if(event.requestFrom == Modal_RequestType.internet) {
+        for(var pair in pairs) {
+          await localDataProvider.removePair(pair);
+        }
+        await notifCtrl.confirmedCloseConnection(pairs);
+        final controller = notifCtrl.streamController;
+        yield CryptoLoaded(streamController: controller);
+      }
+      if(event.requestFrom == Modal_RequestType.local) {
+        for(var pair in pairs) {
+          await localDataProvider.removePair(pair);
+        }
+        final currencies = await localDataProvider.getLocalCurrencies();
+        yield LocalCryptoLoaded(currencies: currencies);
+      }
     }
     if(event is GetLocalCrypto) {
-      final currencies = await LocalDataProvider().getLocalCurrencies();
+      final currencies = await localDataProvider.getLocalCurrencies();
       yield LocalCryptoLoaded(currencies: currencies);
     }
     if(event is CryptoCloseAllConnections) {
@@ -71,11 +92,12 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     }
     if(event is RetryConnection) {
       try {
+        print('retry connection');
         await notifCtrl.initWebSocketConnection();
       } catch(e) {
         print(e);
         try {
-          final currencies = await LocalDataProvider().getLocalCurrencies();
+          final currencies = await localDataProvider.getLocalCurrencies();
           yield LocalCryptoLoaded(currencies: currencies);
         } catch (e) {
           print(e);
