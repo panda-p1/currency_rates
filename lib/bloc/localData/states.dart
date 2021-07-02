@@ -50,10 +50,10 @@ class GetLocalCurrenciesError extends LocalDataState {}
 
 class StoreCurrenciesError extends LocalDataState {}
 
-class LocalCurrencies extends LocalDataState {
-  final Currencies currencies;
-  LocalCurrencies({required this.currencies});
-}
+// class LocalCurrencies extends LocalDataState {
+//   final Currencies currencies;
+//   LocalCurrencies({required this.currencies});
+// }
 
 
 class ConnectionResumed extends LocalDataState {}

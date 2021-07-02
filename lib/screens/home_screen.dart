@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:core';
 import 'dart:ui';
 
+import 'package:currencies_pages/api/currenciesProvider.dart';
 import 'package:currencies_pages/widgets/bottom_circle_loader.dart';
 import 'package:currencies_pages/widgets/crypto_loader.dart';
 import 'package:currencies_pages/widgets/currency_widget.dart';
@@ -39,6 +40,8 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
+  var itemsLength = 0;
+  var key = UniqueKey();
 
   bool _isInForeground = true;
 
@@ -66,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   late AnimationController controller;
   @override
   void initState() {
+
     _initRates();
     _initCryptoWebSocket();
     WidgetsBinding.instance!.addObserver(this);
@@ -90,10 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     super.initState();
   }
   _initRates() {
-    context.read<CurrenciesBloc>().add(CurrenciesEvents.initGetRate);
-  }
-  _loadRates() {
-    context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+    context.read<CurrenciesBloc>().add(CurrenciesEvents.getBinance);
   }
 
   _initCryptoWebSocket() {
@@ -163,6 +164,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
                   print('----------------------------------------------------------------------');
                   print(state);
+
                   if(state is CryptoClosingState) {
                     return Stack(
                       children: [
@@ -194,9 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   // }
 
                   if(state is CurrenciesLoaded) {
-                    // context.read<LocalDataBloc>().add(StoreCurrencies(currencies: state.currencies));
                     controller.duration = Duration(milliseconds: (state.currencies.delay * 1000).toInt());
-
                   }
                   return _bodyUI();
 
@@ -413,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   child: CustomPaint(
                     painter: status1 != Statuses.offline
                         ? Painter(sweepAngle: animation.value, color: animation1.value == null ? Colors.green : animation1.value!, status: status1)
-                        : Painter(sweepAngle: degToRad(20670), color: Colors.red, status: status1),
+                        : Painter(sweepAngle: Utils.degToRad(20670), color: Colors.red, status: status1),
                     size: Size(RingStyles.ringSize,RingStyles.ringSize),
                   ),
                 );
@@ -423,13 +423,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             TextButton(
               onPressed: () async {
                 isEditingMode.value = false;
-
                 await Navigator.push(context, MaterialPageRoute(builder: (context) =>
                     BlocProvider(
                       create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),
                       child: AddTickerScreen(),
                     ),
                 ));
+                // await Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                //     MultiBlocProvider(
+                //       providers: [
+                //         BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
+                //         BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
+                //       ],
+                //       child: AddTickerScreen(),)
+                // ));
                 context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
               },
                child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
@@ -473,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               child: const Text('confirm'),
               onPressed: () {
                 Navigator.pop(alertContext);
-                context.read<CryptoBloc>().add(ConfirmedRemovePair(pairs: confirmationDetails, requestFrom: requestFrom));
+                context.read<CryptoBloc>().add(ConfirmedRemovePair(pairs: d, requestFrom: requestFrom));
                 controller.forward();
               },
             ),
@@ -500,7 +507,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     if(cryptoController == null) {
       cryptoController = streamController;
     }
-
     return StreamBuilder<Map<Currency_Pairs, Crypto?>>(
       stream: streamController.stream,
       builder: (_, snapshot) {
@@ -516,6 +522,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           return CryptoLoader(styles: PortraitStyles(),);
         }
         final currencies = snapshot.data!;
+        if(currencies.isEmpty) {
+          context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
+        }
         context.read<LocalDataBloc>().add(StoreCurrencies(currencies: currencies));
 
         final items = currencies.values.map((crypto) {
@@ -524,6 +533,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           }
           return _orientatedCurrencyWidget(price: crypto.price, name: crypto.name, requestFrom: Modal_RequestType.internet);
         }).toList();
+
         return ValueListenableBuilder<Orientation>(
           valueListenable: orientationUI,
           builder: (_, orientation, __) {
@@ -558,21 +568,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     );
                   });
             }
-            if (orientation == Orientation.landscape) {
-
+            if(orientation == Orientation.landscape) {
+              if(itemsLength != items.length) { // FIXED BUG line 110 pos 12: flutter: '_positions.isNotEmpty
+                itemsLength = items.length;
+                key = UniqueKey();
+              }
+              print(key);
               return SizedBox(
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
                   child: Swiper(
+                    key: key,
                     pagination: const SwiperPagination(
                       alignment: Alignment.bottomCenter,
                       builder: DotSwiperPaginationBuilder(
                         color: Colors.grey,
                       ),
                     ),
+
                     itemCount: items.length,
                     itemBuilder: (BuildContext context, int index) => styledItems[index]
-                    )
+                  )
               );
             }
             return Container();
@@ -666,6 +682,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 });
           }
           if(orientation == Orientation.landscape) {
+            if(itemsLength != items.length) { // FIXED BUG line 110 pos 12: flutter: '_positions.isNotEmpty
+              itemsLength = items.length;
+              key = UniqueKey();
+            }
             return SizedBox(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),

@@ -3,6 +3,50 @@ import 'dart:math';
 import 'constants.dart';
 import 'package:currencies_pages/model/crypto.dart';
 
+import 'dart:convert';
+import 'dart:math';
+
+class Utils {
+  static bool _cached = false;
+  static setCached() {
+    _cached = true;
+  }
+  static bool isCached() {
+    return _cached;
+  }
+  static double degToRad(double deg) => deg * (pi / 180.0);
+
+  static String getValueAfterDot(el) {
+    return el.toString().substring(el.toString().indexOf('.') + 1);
+  }
+
+  static String makeShortPrice(double price) {
+    var stringPrice = price.toString();
+    return stringPrice = stringPrice.length > 9 ? stringPrice.substring(0, 9) : stringPrice;
+  }
+
+  static Theme_Types stringThemeToEnum(String str) {
+    try {
+      return Theme_Types.values.firstWhere(
+            (value) => value.toString().split('.')[1] == str,
+      );
+    } catch (e) {
+      print("wrong enum stringThemeToEnum type!!");
+      return Theme_Types.values.first;
+    }
+  }
+  static Currency_Pairs stringCurPairsToEnum(String str) {
+    try {
+      return Currency_Pairs.values.firstWhere(
+            (value) => value.toString().split('.')[1] == str,
+      );
+    } catch (e) {
+      print("wrong enum stringCurPairsToEnum type!!");
+      return Currency_Pairs.values.first;
+    }
+  }
+}
+
 class CryptoFromBackendHelper {
   static Map<Currency_Pairs, String> _nameByCurrencyType = {
     Currency_Pairs.btcusd: 'BTC-USD',
@@ -22,11 +66,11 @@ class CryptoFromBackendHelper {
       c.removeLast();
       stringType = c.join();
     }
-    return stringCurPairsToEnum(stringType);
+    return Utils.stringCurPairsToEnum(stringType);
   }
   static String _getPrice(Map<String, dynamic> crypto) {
     var price = ((double.parse(crypto['b'].toString()) + double.parse(crypto['a'].toString())) / 2);
-    return makeShortPrice(price);
+    return Utils.makeShortPrice(price);
   }
   static String getNameByCurrencyType(Currency_Pairs type) {
     return _nameByCurrencyType[type]!;
@@ -45,64 +89,3 @@ class CryptoFromBackendHelper {
   }
 }
 
-double degToRad(double deg) => deg * (pi / 180.0);
-
-String getValueAfterDot(el) {
-  return el.toString().substring(el.toString().indexOf('.') + 1);
-}
-
-String makeShortPrice(double price) {
-  var stringPrice = price.toString();
-  return stringPrice = stringPrice.length > 9 ? stringPrice.substring(0, 9) : stringPrice;
-}
-
-Grad_Direction stringGradDirToEnum(String str) {
-  try {
-    return Grad_Direction.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum stringGradDirToEnum type!!");
-    return Grad_Direction.values.first;
-  }
-}
-String enumToString(Grad_Direction dir) {
-  if(dir == Grad_Direction.down) {
-    return 'down';
-  }
-  if(dir == Grad_Direction.up) {
-    return 'up';
-  }
-  throw Exception();
-}
-
-Theme_Types stringThemeToEnum(String str) {
-  try {
-    return Theme_Types.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum stringThemeToEnum type!!");
-    return Theme_Types.values.first;
-  }
-}
-Currency_Pairs stringCurPairsToEnum(String str) {
-  try {
-    return Currency_Pairs.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum stringCurPairsToEnum type!!");
-    return Currency_Pairs.values.first;
-  }
-}
-Currency_Type stringCurTypeToEnum(String str) {
-  try {
-    return Currency_Type.values.firstWhere(
-          (value) => value.toString().split('.')[1] == str,
-    );
-  } catch (e) {
-    print("wrong enum type!!");
-    return Currency_Type.values.first;
-  }
-}

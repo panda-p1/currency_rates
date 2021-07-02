@@ -11,14 +11,14 @@ class Crypto {
     return Crypto(
         price: json['price'],
         name: json['name'],
-        type: stringCurPairsToEnum(json['type'])
+        type: Utils.stringCurPairsToEnum(json['type'])
     );
   }
   Map<String, dynamic> toJson() {
     return {
       'price': price,
       'name': name,
-      'type': getValueAfterDot(type)
+      'type': Utils.getValueAfterDot(type)
     };
   }
 }

@@ -92,7 +92,6 @@ class NotificationController {
       }
 
       pairs.removeWhere((element) => pairss.contains(element));
-// REMOVING TICKERS THAT HAS NO URL AND WILL NOT BE DELETED BY ITS CHAINS URL
       if(!pairsUrls.keys.contains(pair)
           && !pairss.where((element) => element != pair).any((element) => currencyChains[element]!.contains(pair))) {
         obj.remove(pair);
@@ -138,9 +137,7 @@ class NotificationController {
     if(!pairsUrls.containsKey(pair)) {
       throw Exception('pairsUrls does not contain this pair');
     }
-    print(pair);
     if(pair == Currency_Pairs.dogeusd || pair == Currency_Pairs.ethusd) {
-      // ignore: cancel_subscriptions
       channels[pair]!.listen((streamData) {
         final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
         obj[crypto.type] = crypto;
@@ -164,7 +161,7 @@ class NotificationController {
           && (crypto.type == Currency_Pairs.btcrub || crypto.type == Currency_Pairs.btceur)) {
         obj[Currency_Pairs.eurrub] = Crypto(
             name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub),
-            price: makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
+            price: Utils.makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
             type: Currency_Pairs.eurrub);
       }
       if(pairs.contains(Currency_Pairs.eurusd) &&
@@ -172,7 +169,7 @@ class NotificationController {
           && (crypto.type == Currency_Pairs.btceur || crypto.type == Currency_Pairs.btcusd)) {
         obj[Currency_Pairs.eurusd] = Crypto(
             name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd),
-            price: makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
+            price: Utils.makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
             type: Currency_Pairs.eurusd);
       }
       if(pairs.contains(Currency_Pairs.usdrub) &&
@@ -180,7 +177,7 @@ class NotificationController {
           && (crypto.type == Currency_Pairs.btcusd || crypto.type == Currency_Pairs.btcrub)) {
         obj[Currency_Pairs.usdrub] =  Crypto(
             name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub),
-            price: makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
+            price: Utils.makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
             type: Currency_Pairs.usdrub);
       }
       streamController.add(obj);
@@ -188,24 +185,10 @@ class NotificationController {
     }).onDone(() => _onDoneChannel(pair));
   }
   _initPairs(List<Currency_Pairs> pairss) async {
-
     pairs.addAll(pairss.reversed);
-
     final Map<Currency_Pairs, String> channelPairs = Map.from(pairsUrls)..removeWhere((k, v) => !pairss.contains(k));
-
     final websockets = await _initConnectWs(channelPairs);
-
-    pairss.forEach((pair) {
-      final requiredToStartListenPairs = reversedCurrencyChain[pair]!;
-      for(var index = 0; index < requiredToStartListenPairs.length; index++) {
-        final channelName = requiredToStartListenPairs[index];
-        if (!channels.keys.contains(channelName)) {
-          channels.addEntries([MapEntry(channelName, websockets[index])]);
-        }
-      }
-    });
-    print('channels');
-    print(channels);
+    channels = {for(var i in List.generate(websockets.length, (index) => index)) channelPairs.keys.toList()[i]: websockets[i]};
     channels.forEach((key, value) {
       _addListener(key);
     });
@@ -214,11 +197,7 @@ class NotificationController {
     print("connecting...");
     final chosenPairs = await LocalDataProvider().getChosenPairs();
     obj = {for (var pair in chosenPairs) pair: null};
-    //@TODO Implement PromiseAll instead await several times
-    // _initPairs(chosenPairs);
-    for(var pair in chosenPairs.reversed) {
-      await addPair(pair);
-    }
+    await _initPairs(chosenPairs);
   }
   
   Future<List<WebSocket>> _initConnectWs(Map<Currency_Pairs, String> pairs) async {

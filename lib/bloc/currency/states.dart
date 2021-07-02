@@ -31,14 +31,14 @@ class LostConnection extends CurrenciesState {
 }
 
 class CurrenciesLoaded extends CurrenciesState {
-  final Currencies currencies;
+  final BinanceRestCurrencies currencies;
   CurrenciesLoaded({required this.currencies});
   @override
   List<Object> get props => [currencies];
 }
 
 class LocalCurrenciesLoaded extends CurrenciesState {
-  final Currencies currencies;
+  final BinanceRestCurrencies currencies;
   LocalCurrenciesLoaded({required this.currencies});
   @override
   List<Object> get props => [currencies];

@@ -45,8 +45,8 @@ class Painter extends CustomPainter {
             height: size.height,
             width: size.width,
           ),   // 5.
-          degToRad(180),   // 6.
-          degToRad(sweepAngle), // 7.
+          Utils.degToRad(180),   // 6.
+          Utils.degToRad(sweepAngle), // 7.
           false);
 
     canvas.drawPath(path1, paint1);   // 8.

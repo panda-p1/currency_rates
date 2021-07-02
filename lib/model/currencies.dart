@@ -2,47 +2,49 @@ import '../constants.dart';
 import '../tools.dart';
 
 class Currency {
-  final num price;
-  final Grad_Direction gradDirection;
-  final Currency_Type type;
-  Currency({required this.price, required this.gradDirection, required this.type});
+  final String type;
+  final String baseAsset;
+  final String quoteAsset;
 
-  Map<String, dynamic> toJson() => {
-    '${getValueAfterDot(type)}Change': gradDirection.toString().substring(gradDirection.toString().indexOf('.') + 1),
-    '${getValueAfterDot(type)}': price
+  Currency({required this.type, required this.baseAsset, required this.quoteAsset});
+
+  factory Currency.fromJson(Map<String, dynamic> json) {
+    return Currency(
+      baseAsset: json['baseAsset'],
+      quoteAsset: json['quoteAsset'],
+      type: json['baseAsset'] + '-' + json['quoteAsset'],
+    );
+  }
+  toJson() => {
+    'type': type,
+    'baseAsset': baseAsset,
+    'quoteAsset': quoteAsset
   };
 }
 
-class Currencies {
-  // final Currency eur;
-  // final Currency eurusd;
-  // final Currency usd;
+class BinanceRestCurrencies {
+  final List<Currency> currencies;
   final double delay;
   final String time;
 
-  Currencies({
-  //   required this.eur,
-  //   required this.eurusd, required this.usd,
+  BinanceRestCurrencies({
+    required this.currencies,
     required this.delay, required this.time
   });
 
   // List<dynamic> get arrayOfCurrencies => ['crypto reserved place', eur, eurusd, usd];
   List<dynamic> get arrayOfCurrencies => ['crypto reserved place'];
 
-  factory Currencies.fromJson(json) {
-    return Currencies(
-        // eur: Currency(price: double.parse(json['eur'].toString()), gradDirection: stringGradDirToEnum(json['eurChange']), type: stringCurTypeToEnum('eur')),
-        // eurusd: Currency(price:double.parse(json['eurusd'].toString()) , gradDirection: stringGradDirToEnum(json['eurusdChange']), type: stringCurTypeToEnum('eurusd')),
-        // usd: Currency(price: double.parse(json['usd'].toString()), gradDirection: stringGradDirToEnum(json['usdChange']), type: stringCurTypeToEnum('usd')),
+  factory BinanceRestCurrencies.fromJson(Map<String, dynamic> json) {
+    return BinanceRestCurrencies(
+        currencies: (json['symbols'] as List).map((e) => Currency.fromJson(e)).toList(),
         delay: json['delay'], time: json['time']
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      // ...eur.toJson(),
-      // ...eurusd.toJson(),
-      // ...usd.toJson(),
+      'currencies': currencies.map((e) => e.toJson()).toList(),
       'delay': delay,
       'time': time
     };
