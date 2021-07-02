@@ -121,10 +121,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                         child: ConfigScreen(),
                       )
                   ));
-                  context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
-                  controller.duration = Duration(milliseconds: (delay1 * 1000).toInt());
-                  controller.value = 0;
-                  controller.forward();
+                  if(delay1 != null) {
+                    context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+                    controller.duration = Duration(milliseconds: (delay1 * 1000).toInt());
+                    controller.value = 0;
+                    controller.forward();
+                  }
                 },
               ),
               ValueListenableBuilder<bool>(
@@ -162,9 +164,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                       }, valueListenable: _topLoaderHeight,
                   ),
               BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
-                  print('----------------------------------------------------------------------');
-                  print(state);
-
                   if(state is CryptoClosingState) {
                     return Stack(
                       children: [
@@ -282,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       if(retryConnectionTimer != null) {
         retryConnectionTimer = null;
       }
-      print(state);
       if(topLoading) {
         Future.delayed(Duration(seconds: 1), () async {
           setState(() {
@@ -423,20 +421,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             TextButton(
               onPressed: () async {
                 isEditingMode.value = false;
-                await Navigator.push(context, MaterialPageRoute(builder: (context) =>
-                    BlocProvider(
-                      create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),
-                      child: AddTickerScreen(),
-                    ),
-                ));
                 // await Navigator.push(context, MaterialPageRoute(builder: (context) =>
-                //     MultiBlocProvider(
-                //       providers: [
-                //         BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
-                //         BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
-                //       ],
-                //       child: AddTickerScreen(),)
+                //     BlocProvider(
+                //       create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),
+                //       child: AddTickerScreen(),
+                //     ),
                 // ));
+                await Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                    MultiBlocProvider(
+                      providers: [
+                        BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
+                        BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
+                      ],
+                      child: AddTickerScreen(),)
+                ));
                 context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
               },
                child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
@@ -573,7 +571,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 itemsLength = items.length;
                 key = UniqueKey();
               }
-              print(key);
               return SizedBox(
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),

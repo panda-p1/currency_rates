@@ -30,8 +30,8 @@ enum Currency_Type {
   doge
 }
 enum Theme_Types {
-  light,
-  dark
+  dark,
+  light
 }
 enum Currency_Pairs {
   btcusd,

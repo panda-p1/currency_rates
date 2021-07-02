@@ -52,11 +52,15 @@ abstract class LocalDataRepo {
 class LocalDataProvider implements LocalDataRepo {
     Future<BinanceRestCurrencies> getBinanceRestapiCurrencies() async {
       final prefs = await SharedPreferences.getInstance();
-      final currencies = BinanceRestCurrencies.fromJson(jsonDecode(prefs.getString('chosenPairs')!));
+      final currencies = BinanceRestCurrencies.fromJson(jsonDecode(prefs.getString('binanceCurrencies')!));
+      print('LocalDataProvider BinanceRestCurrencies currencies:');
+      print(currencies);
       return currencies;
     }
     Future<Null> storeBinanceRestapiCurrencies(BinanceRestCurrencies currencies) async {
       final prefs = await SharedPreferences.getInstance();
+      print('LocalDataProvider storeBinanceRestapiCurrencies jsonEncode(currencies):');
+      print(jsonEncode(currencies));
       prefs.setString('binanceCurrencies', jsonEncode(currencies));
     }
     Future<Null> reorderPairs(int newIdx, Currency_Pairs pair) async {
@@ -82,7 +86,6 @@ class LocalDataProvider implements LocalDataRepo {
     final prefs = await SharedPreferences.getInstance();
     final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
     final pairs = pairsJson.map((e) => Utils.stringCurPairsToEnum(e)).toList();
-    print('getAvailableToAddPairs $pairs');
     return Currency_Pairs.values.where((element) => !pairs.contains(element)).toList();
   }
   @override
@@ -102,7 +105,6 @@ class LocalDataProvider implements LocalDataRepo {
   Future<Null> removePair(Currency_Pairs pair) async {
     final prefs = await SharedPreferences.getInstance();
     final pairs = await getChosenPairs();
-    print('getChosenPairs $pairs');
     final localCurrencies = await getLocalCurrencies();
 
     pairs.removeWhere((element) => element == pair);
@@ -148,7 +150,7 @@ class LocalDataProvider implements LocalDataRepo {
     final prefs = await SharedPreferences.getInstance();
     final jsonCurrencies = jsonDecode(prefs.getString('currencies')!) as Map;
     return jsonCurrencies.map((pair, crypto) =>
-        MapEntry(Utils.stringCurPairsToEnum(pair), crypto != 'null' ? Crypto.fromJson(crypto) : null)
+        MapEntry(Utils.stringCurPairsToEnum(pair), crypto != null ? Crypto.fromJson(crypto) : null)
     );
   }
   @override
@@ -207,7 +209,7 @@ class LocalDataProvider implements LocalDataRepo {
     } catch (e) {
       print(e);
       prefs.setString('themeMode', 'dark');
-      return lightTheme;
+      return darkTheme;
     }
   }
 

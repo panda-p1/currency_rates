@@ -37,6 +37,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvents, CurrenciesState> {
           try {
             print('SocketException rest');
             final currencies = await LocalDataProvider().getBinanceRestapiCurrencies();
+            print(currencies);
             yield LocalCurrenciesLoaded(currencies: currencies);
           } catch (e) {
             print(e);

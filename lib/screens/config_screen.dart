@@ -17,7 +17,7 @@ class ConfigScreen extends StatefulWidget {
 
 class _ConfigScreenState extends State<ConfigScreen> {
   bool switched = false;
-  double delay1 = 1;
+  double? delay1;
   @override
   void initState() {
     _loadData();

@@ -36,8 +36,10 @@ class BinanceRestCurrencies {
   List<dynamic> get arrayOfCurrencies => ['crypto reserved place'];
 
   factory BinanceRestCurrencies.fromJson(Map<String, dynamic> json) {
+    print(json);
     return BinanceRestCurrencies(
-        currencies: (json['symbols'] as List).map((e) => Currency.fromJson(e)).toList(),
+        currencies: (json['symbols'] == null ? json['currencies'] : json['symbols'])
+            .map<Currency>((e) => Currency.fromJson(e)).toList(),
         delay: json['delay'], time: json['time']
     );
   }
