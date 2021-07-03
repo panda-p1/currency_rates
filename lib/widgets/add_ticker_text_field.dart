@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 class MyTextField extends StatefulWidget {
   final String labelText;
   final void Function(String input) onChange;
-  const MyTextField({Key? key, required this.labelText, required this.onChange}) : super(key: key);
+  final void Function() onFocusChange;
+  const MyTextField({Key? key, required this.labelText, required this.onFocusChange, required this.onChange}) : super(key: key);
 
   @override
   State<MyTextField> createState() => _MyTextFieldState();
@@ -12,10 +13,15 @@ class MyTextField extends StatefulWidget {
 
 class _MyTextFieldState extends State<MyTextField> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+
   @override
   void initState() {
     _controller.addListener(() {
       widget.onChange(_controller.text);
+    });
+    _focusNode.addListener(() {
+      widget.onFocusChange();
     });
     super.initState();
   }
@@ -25,6 +31,7 @@ class _MyTextFieldState extends State<MyTextField> {
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         child: TextField(
+            focusNode: _focusNode,
             controller: _controller,
             decoration: new InputDecoration(
               labelText: widget.labelText,
@@ -48,6 +55,7 @@ class _MyTextFieldState extends State<MyTextField> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
