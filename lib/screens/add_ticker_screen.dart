@@ -164,9 +164,8 @@ class AddTickerScreen extends StatefulWidget {
 class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingObserver{
   Map<String, bool> pairsAdded = {};
   bool connected = true;
-  // bool _isKeyboardVisible = false;
 
-  bool filterOpened = true;
+  final ValueNotifier<bool> filterOpened = ValueNotifier<bool>(true);
 
   String baseInputValue = '';
   String quoteInputValue = '';
@@ -179,7 +178,6 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
     _initCurrencies();
     initConnect();
     super.initState();
-    // WidgetsBinding.instance!.addObserver(this);
 
     internetSubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       if(result == ConnectivityResult.none) {
@@ -200,26 +198,14 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
       connected = isDeviceConnectedToInternet;
     });
   }
-  //
-  // @override
-  // void didChangeMetrics() {
-  //   final bottomInset = WidgetsBinding.instance!.window.viewInsets.bottom;
-  //   final newValue = bottomInset > 0.0;
-  //   if (newValue != _isKeyboardVisible) {
-  //     setState(() {
-  //       _isKeyboardVisible = newValue;
-  //     });
-  //   }    super.didChangeMetrics();
-  // }
 
   @override
   void dispose() {
-    // WidgetsBinding.instance!.removeObserver(this);
     internetSubscription.cancel();
     super.dispose();
   }
   _initCurrencies() {
-    context.read<CurrenciesBloc>().add(CurrenciesEvents.getBinance);
+    context.read<CurrenciesBloc>().add(GetBinance());
   }
   _onBaseFocusChange() {
     setState(() {baseInputFocused = !baseInputFocused;});
@@ -258,10 +244,15 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
               if(pairsAdded.isEmpty) {
                 pairsAdded = {for (var currency in state.currencies.currencies) currency.type: false};
               }
+
               return _bodyUI(currencies: state.currencies);
             }
             if(state is CurrenciesLoading) {
-              return Center(child: CircularProgressIndicator(),);
+              if(baseInputValue.isEmpty && quoteInputValue.isEmpty) {
+                return _typeToSeeTip();
+              } else {
+                return Center(child: CircularProgressIndicator(),);
+              }
             }
             return Text('');
           }),
@@ -270,33 +261,36 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
     );
   }
   void _onArrowTap() {
-    setState(() {
-      filterOpened = !filterOpened;
-    });
+    filterOpened.value = !filterOpened.value;
   }
   Widget _filter() {
-    return AnimatedSize(
-        curve: Curves.fastOutSlowIn,
-        duration: Duration(milliseconds: 300),
-        child: Column(
-          children: [
-            SizedBox(
-              height: filterOpened ? null : 0,
+    return ValueListenableBuilder<bool>(
+        valueListenable: filterOpened,
+        builder: (context, bool filterOpened, child){
+          return AnimatedSize(
+              curve: Curves.fastOutSlowIn,
+              duration: Duration(milliseconds: 300),
               child: Column(
                 children: [
-                  _baseTextField(),
-                  _quoteTextField()
+                  SizedBox(
+                    height: filterOpened ? null : 0,
+                    child: Column(
+                      children: [
+                        _baseTextField(),
+                        _quoteTextField()
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: _onArrowTap,
+                    child: Center(
+                        child: filterOpened ? Icon(Icons.arrow_circle_up_outlined) : Icon(Icons.arrow_drop_down)
+                    ),
+                  )
                 ],
-              ),
-            ),
-            InkWell(
-              onTap: _onArrowTap,
-              child: Center(
-                  child: filterOpened ? Icon(Icons.arrow_circle_up_outlined) : Icon(Icons.arrow_drop_down)
-              ),
-            )
-          ],
-        )
+              )
+          );
+        }
     );
   }
 
@@ -312,6 +306,9 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
         && currency.quoteAsset.toLowerCase().startsWith(quoteInputValue.toLowerCase())
     ).toList();
 
+    if(baseInputValue.isEmpty && quoteInputValue.isEmpty) {
+      return _typeToSeeTip();
+    }
     if(filteredPairs.isEmpty) {
       return _emptyListTip();
     }
@@ -331,7 +328,7 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
                 Spacer(),
                 Container(
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
                       color: buttonColor != null ? buttonColor : !pairsAdded[pair.type]! ? Colors.blue : Colors.red
                   ),
                   child: Center(
@@ -374,9 +371,8 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
     return SubstringHighlight(
       text: text,
       term: inputValue,
-      textStyle: TextStyle(fontSize: AddTickerStyles.fontSize),
+      textStyle: TextStyle(fontSize: AddTickerStyles.fontSize, color: Theme.of(context).textTheme.bodyText1!.color),
       textStyleHighlight: TextStyle(fontSize: AddTickerStyles.fontSize, color: Colors.yellow),
-      // child: Text(text, style: TextStyle(fontSize: AddTickerStyles.fontSize),)
     );
   }
 
@@ -436,10 +432,20 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
     });
   }
 
+  Widget _typeToSeeTip() {
+    return Align(
+        alignment: Alignment.topCenter,
+        child: Text('Type and choose the one you need.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: AddTickerStyles.fontSize),
+        )
+    );
+  }
+
   Widget _emptyListTip() {
     return Align(
         alignment: Alignment.topCenter,
-        child: Text('There is no one symbol relevant your filter.',
+        child: Text('There is no one symbol relevant to your filter.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: AddTickerStyles.fontSize),
         )

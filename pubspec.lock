@@ -36,6 +36,24 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.0"
+  charts_common:
+    dependency: transitive
+    description:
+      path: charts_common
+      ref: HEAD
+      resolved-ref: d9aad8a9dd9782ec2fadd193833465b79e968c61
+      url: "https://github.com/robhoefakker/charts.git"
+    source: git
+    version: "0.9.1"
+  charts_flutter:
+    dependency: "direct main"
+    description:
+      path: charts_flutter
+      ref: HEAD
+      resolved-ref: d9aad8a9dd9782ec2fadd193833465b79e968c61
+      url: "https://github.com/robhoefakker/charts.git"
+    source: git
+    version: "0.9.1"
   clock:
     dependency: transitive
     description:

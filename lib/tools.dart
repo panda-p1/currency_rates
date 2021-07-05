@@ -85,7 +85,8 @@ class CryptoFromBackendHelper {
     var price = _getPrice(crypto);
     var type = _getCurrencyType(crypto);
     var name = _getName(crypto);
-    return Crypto(name: name, price: price, type: type);
+    var queryName = crypto['s'];
+    return Crypto(name: name, price: price, type: type, queryName: queryName);
   }
 }
 

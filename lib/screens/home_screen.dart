@@ -3,12 +3,12 @@ import 'dart:core';
 import 'dart:ui';
 
 import 'package:currencies_pages/api/currenciesProvider.dart';
+import 'package:currencies_pages/screens/currency_graphic.dart';
 import 'package:currencies_pages/widgets/bottom_circle_loader.dart';
 import 'package:currencies_pages/widgets/crypto_loader.dart';
 import 'package:currencies_pages/widgets/currency_widget.dart';
 import 'package:currencies_pages/widgets/scroll_notification_listener.dart';
 import 'package:reorderables/reorderables.dart';
-import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/crypto/bloc.dart';
 import 'package:currencies_pages/bloc/crypto/events.dart';
 import 'package:currencies_pages/bloc/crypto/states.dart';
@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             controller.reset();
           }
           if (status == AnimationStatus.completed) {
-            context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+            context.read<CurrenciesBloc>().add(GetRate());
           }
 
         });
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     super.initState();
   }
   _initRates() {
-    context.read<CurrenciesBloc>().add(CurrenciesEvents.getBinance);
+    context.read<CurrenciesBloc>().add(GetBinance());
   }
 
   _initCryptoWebSocket() {
@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                       )
                   ));
                   if(delay1 != null) {
-                    context.read<CurrenciesBloc>().add(CurrenciesEvents.getRate);
+                    context.read<CurrenciesBloc>().add(GetRate());
                     controller.duration = Duration(milliseconds: (delay1 * 1000).toInt());
                     controller.value = 0;
                     controller.forward();
@@ -445,9 +445,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
   Widget Function(CurrencyStyles styles, Orientation orientation)
-   _orientatedCurrencyWidget({required String name, required String price, required Modal_RequestType requestFrom}) {
+   _orientatedCurrencyWidget({required Crypto crypto, required Modal_RequestType requestFrom}) {
     return (CurrencyStyles styles, Orientation orientation) {
-      return _listenableCurrencyWidget(styles: styles,price: price, name: name, requestFrom: requestFrom, orientation: orientation);
+      return _listenableCurrencyWidget(styles: styles, crypto: crypto, requestFrom: requestFrom, orientation: orientation);
     };
   }
 
@@ -519,6 +519,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
           return CryptoLoader(styles: PortraitStyles(),);
         }
+
         final currencies = snapshot.data!;
         if(currencies.isEmpty) {
           context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
@@ -529,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           if(crypto == null) {
             return null;
           }
-          return _orientatedCurrencyWidget(price: crypto.price, name: crypto.name, requestFrom: Modal_RequestType.internet);
+          return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.internet);
         }).toList();
 
         return ValueListenableBuilder<Orientation>(
@@ -599,31 +600,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       context.read<CryptoBloc>().add(CryptoRemovePair(pair: CryptoFromBackendHelper.getCurrencyTypeByName(name), requestFrom: requestFrom));
   }
 
-  Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required String price, required String name, required Orientation orientation}) {
+  Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required Crypto crypto, required Orientation orientation}) {
 
     return ValueListenableBuilder<bool>(
       valueListenable: isEditingMode,
-      builder: (_, mode, __) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if(mode && orientation == Orientation.portrait) IconButton(onPressed: () => _onDeletePair(name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+      builder: (_, mode, __) => InkWell(
+        onTap: !mode ? () {
+          Navigator.push(context, MaterialPageRoute(
+              builder: (_) => BlocProvider(
+                  create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
+                  child: CurrencyGraphic(tickerName: crypto.queryName),
+              )
+          ));
+          print('tap');
+        } : null,
 
-          Expanded(
-            child: CurrencyWidget(
-              styles: styles,
-              animated: false,
-              currencyPrice: price,
-              finalColor: Theme.of(context).accentColor,
-              currencyName: name,
-              deleteIcon: orientation == Orientation.landscape && mode,
-              onDeleteIconPress: () => _onDeletePair(name, requestFrom)
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if(mode && orientation == Orientation.portrait) IconButton(onPressed: () => _onDeletePair(crypto.name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+
+            Expanded(
+              child: CurrencyWidget(
+                styles: styles,
+                animated: false,
+                currencyPrice: crypto.price,
+                finalColor: Theme.of(context).accentColor,
+                currencyName: crypto.name,
+                deleteIcon: orientation == Orientation.landscape && mode,
+                onDeleteIconPress: () => _onDeletePair(crypto.name, requestFrom)
+              ),
             ),
-          ),
 
-          if(mode && orientation == Orientation.portrait) IconButton(onPressed: () => {}, icon: Icon(Icons.format_align_justify_outlined )),
+            if(mode && orientation == Orientation.portrait) IconButton(onPressed: null, icon: Icon(Icons.format_align_justify_outlined )),
 
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -646,7 +659,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       if(crypto == null) {
         return null;
       }
-      return _orientatedCurrencyWidget(price: crypto.price, name: crypto.name, requestFrom: Modal_RequestType.local);
+      return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.local);
     }).toList();
 
 

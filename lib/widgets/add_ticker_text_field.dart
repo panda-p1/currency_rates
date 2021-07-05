@@ -29,7 +29,7 @@ class _MyTextFieldState extends State<MyTextField> {
   Widget build(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.8,
+        width: MediaQuery.of(context).size.width * 0.9,
         child: TextField(
             focusNode: _focusNode,
             controller: _controller,
@@ -38,14 +38,13 @@ class _MyTextFieldState extends State<MyTextField> {
               fillColor: Theme.of(context).textTheme.bodyText1!.color,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(25.0),
-
                 borderSide: BorderSide(),
               ),
               //fillColor: Colors.green
             ),
 
             keyboardType: TextInputType.emailAddress,
-            style: new TextStyle(
+            style: const TextStyle(
               fontFamily: "Poppins",
             )
         ),
