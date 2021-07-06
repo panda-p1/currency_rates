@@ -14,9 +14,13 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
   @override
   Stream<CurrenciesState> mapEventToState(CurrenciesEvent event,) async* {
     if(event is GetGraphicPrice) {
-      yield CurrenciesLoading();
-      final graphicPrice = await currencyRepo.getGraphicPrice(event.ticker);
-      yield GraphicPriceLoaded(prices: graphicPrice);
+      try {
+        yield CurrenciesLoading();
+        final graphicPrice = await currencyRepo.getGraphicPrice(event.ticker, event.interval);
+        yield GraphicPriceLoaded(prices: graphicPrice);
+      } catch(e) {
+        yield CurrenciesError(message: e.toString());
+      }
     }
     if(event is GetBinance) {
       try {

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 abstract class CurrencyStyles {
-  double currencyNameFontSize();
+  double? currencyNameFontSize();
   double currencyPriceFontSize();
-  double iconsSize();
-  Color currencyNameFontColor();
+  Color? currencyNameFontColor();
   double currencyWidgetHeight();
 }
 
@@ -17,7 +16,6 @@ class LayoutStyles {
 class PortraitStyles extends CurrencyStyles {
   double currencyNameFontSize() => 30;
   double currencyPriceFontSize() => 50;
-  double iconsSize() => 40;
   Color currencyNameFontColor() => Colors.grey[600]!;
   double currencyWidgetHeight() => 120;
 }
@@ -25,10 +23,8 @@ class PortraitStyles extends CurrencyStyles {
 class LandscapeStyles extends CurrencyStyles {
   double currencyNameFontSize() => 45;
   double currencyPriceFontSize() => 70;
-  double iconsSize() => 60;
   Color currencyNameFontColor() => Colors.grey[600]!;
   double currencyWidgetHeight() => 220;
-
 }
 
 class RingStyles {
@@ -53,3 +49,4 @@ class AddTickerStyles {
   static double fontSize = 30;
   static double buttonSize = 16;
 }
+

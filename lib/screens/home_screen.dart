@@ -296,7 +296,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return CryptoLoader(styles: PortraitStyles(),);
       }
       if(state is LocalCryptoLoaded) {
-
         retryConnectionTimer = Timer(Duration(seconds: 2), () {
           context.read<CryptoBloc>().add(RetryConnection());
         });
@@ -521,6 +520,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         }
 
         final currencies = snapshot.data!;
+
         if(currencies.isEmpty) {
           context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
         }
@@ -609,10 +609,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           Navigator.push(context, MaterialPageRoute(
               builder: (_) => BlocProvider(
                   create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
-                  child: CurrencyGraphic(tickerName: crypto.queryName),
+                  child: CurrencyGraphic(crypto: crypto, streamController: cryptoController,),
               )
           ));
-          print('tap');
         } : null,
 
         child: Row(
@@ -624,9 +623,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             Expanded(
               child: CurrencyWidget(
                 styles: styles,
-                animated: false,
                 currencyPrice: crypto.price,
-                finalColor: Theme.of(context).accentColor,
                 currencyName: crypto.name,
                 deleteIcon: orientation == Orientation.landscape && mode,
                 onDeleteIconPress: () => _onDeletePair(crypto.name, requestFrom)

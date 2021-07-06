@@ -22,6 +22,9 @@ class Utils {
 
   static String makeShortPrice(double price) {
     var stringPrice = price.toString();
+    while(stringPrice.length < 9) {
+      stringPrice+='0';
+    }
     return stringPrice = stringPrice.length > 9 ? stringPrice.substring(0, 9) : stringPrice;
   }
 

@@ -52,5 +52,10 @@ class GraphicPriceLoaded extends CurrenciesState {
   List<Object> get props => [prices];
 }
 
+class CurrenciesError extends CurrenciesState {
+  final String message;
+  CurrenciesError({required this.message});
+}
+
 class LocalCurrenciesError extends CurrenciesState {}
 

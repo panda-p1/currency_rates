@@ -17,7 +17,8 @@ class GetBinance extends CurrenciesEvent {
 
 class GetGraphicPrice extends CurrenciesEvent {
   final String ticker;
-  GetGraphicPrice({required this.ticker});
+  final String interval;
+  GetGraphicPrice({required this.ticker, required this.interval});
   @override
-  List<Object> get props => [];
+  List<Object> get props => [ticker, interval];
 }
