@@ -9,10 +9,10 @@ import 'package:currencies_pages/widgets/currency_widget.dart';
 import 'package:currencies_pages/widgets/horizontal_currency.dart';
 import 'package:currencies_pages/widgets/interval_button.dart';
 
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/src/provider.dart';
 import '../constants.dart';
 import '../styles.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
@@ -28,6 +28,23 @@ const INTERVALS = {
   '1Y': ''
 };
 
+class SDI {
+  final int date;
+  final String interval;
+  SDI({required this.date, required this.interval});
+}
+
+Map<String, SDI> INTERVAL_DATE = {
+  '1H': SDI(date: DateTime.now().subtract(Duration(hours: 1)).millisecondsSinceEpoch, interval: '1m' ),
+  '2H': SDI(date: DateTime.now().subtract(Duration(hours: 2)).millisecondsSinceEpoch, interval: '1m' ),
+  '6H': SDI(date: DateTime.now().subtract(Duration(hours: 6)).millisecondsSinceEpoch, interval: '3m' ),
+  '12H': SDI(date: DateTime.now().subtract(Duration(hours: 12)).millisecondsSinceEpoch, interval: '5m' ),
+  '1D': SDI(date: DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch, interval: '15m' ),
+  '7D': SDI(date: DateTime.now().subtract(Duration(days: 7)).millisecondsSinceEpoch, interval: '1h' ),
+  '30D': SDI(date: DateTime.now().subtract(Duration(days: 30)).millisecondsSinceEpoch, interval: '4h' ),
+  '1Y': SDI(date: DateTime.now().subtract(Duration(days: 356)).millisecondsSinceEpoch, interval: '1d' ),
+};
+
 class CurrencyGraphic extends StatefulWidget {
   final Crypto crypto;
   final StreamController<Map<Currency_Pairs, Crypto?>>? streamController;
@@ -39,6 +56,8 @@ class CurrencyGraphic extends StatefulWidget {
 
 class _CurrencyGraphicState extends State<CurrencyGraphic> {
   int pressedBtnIdx = 5;
+  double min = 0;
+  double max = 0;
 
   @override
   void initState() {
@@ -46,7 +65,12 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
     super.initState();
   }
   void getGraphicPrice() {
-    context.read<CurrenciesBloc>().add(GetGraphicPrice(ticker: widget.crypto.queryName, interval: INTERVALS.values.toList()[pressedBtnIdx]));
+    final SDI = INTERVAL_DATE.values.toList()[pressedBtnIdx];
+    context.read<CurrenciesBloc>().add(GetGraphicPrice(
+        ticker: widget.crypto.queryName,
+        interval: SDI.interval,
+        startDate: SDI.date
+    ));
   }
   @override
   Widget build(BuildContext context) {
@@ -102,9 +126,9 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
     );
   }
   _onIntervalButtonClick(String btnText) {
-    if(pressedBtnIdx != INTERVALS.keys.toList().indexOf(btnText)) {
+    if(pressedBtnIdx != INTERVAL_DATE.keys.toList().indexOf(btnText)) {
       setState(() {
-        pressedBtnIdx = INTERVALS.keys.toList().indexOf(btnText);
+        pressedBtnIdx = INTERVAL_DATE.keys.toList().indexOf(btnText);
       });
       getGraphicPrice();
     }
@@ -126,6 +150,8 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
   Widget _bodyUI() {
     return BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
       if(state is GraphicPriceLoaded) {
+        min = state.prices.map((e) => double.parse(e.price)).reduce(math.min);
+        max = state.prices.map((e) => double.parse(e.price)).reduce(math.max);
         return _graphic(state.prices);
       }
       if(state is CurrenciesLoading) {
@@ -163,8 +189,10 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
     print(prices.length);
     return _sized(
       child: charts.TimeSeriesChart(
+
         [
           charts.Series<GraphicPrice, DateTime>(
+
             id: widget.crypto.queryName,
             colorFn: (_, __) => charts.ColorUtil.fromDartColor(Theme.of(context).textTheme.bodyText1!.color!),
             domainFn: (GraphicPrice sales, _) => sales.time,
@@ -182,6 +210,7 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
           ),
         ),
         primaryMeasureAxis: charts.NumericAxisSpec(
+          tickProviderSpec: charts.BasicNumericTickProviderSpec(zeroBound: false),
           renderSpec: charts.GridlineRendererSpec(
             labelStyle: charts.TextStyleSpec(
               fontSize: 10,

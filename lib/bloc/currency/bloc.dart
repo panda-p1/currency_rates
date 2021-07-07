@@ -16,7 +16,7 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
     if(event is GetGraphicPrice) {
       try {
         yield CurrenciesLoading();
-        final graphicPrice = await currencyRepo.getGraphicPrice(event.ticker, event.interval);
+        final graphicPrice = await currencyRepo.getGraphicPrice(event.ticker, event.interval, event.startDate);
         yield GraphicPriceLoaded(prices: graphicPrice);
       } catch(e) {
         yield CurrenciesError(message: e.toString());

@@ -8,7 +8,7 @@ import 'localData.dart';
 
 abstract class CurrencyRepo {
   Future<BinanceRestCurrencies> getBinance();
-  Future<List<GraphicPrice>> getGraphicPrice(String tickerName, String interval);
+  Future<List<GraphicPrice>> getGraphicPrice(String tickerName, String interval, int startDate);
 }
 
 class CurrencyProvider implements CurrencyRepo {
@@ -23,8 +23,8 @@ class CurrencyProvider implements CurrencyRepo {
     }
   }
 
-  Future<List<GraphicPrice>> getGraphicPrice(String tickerName, String interval) async {
-    final response = await http.get(Uri.parse('https://api.binance.com/api/v3/klines?symbol=$tickerName&interval=$interval'));
+  Future<List<GraphicPrice>> getGraphicPrice(String tickerName, String interval, int startDate) async {
+    final response = await http.get(Uri.parse('https://api.binance.com/api/v3/klines?symbol=$tickerName&interval=$interval&startTime=$startDate'));
     final pricesList = jsonDecode(response.body) as List;
     return pricesList.map<GraphicPrice>((e) {
       return GraphicPrice(time: DateTime.fromMillisecondsSinceEpoch(e[0]), open: e[1], close: e[4]);
