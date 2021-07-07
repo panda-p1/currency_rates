@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/scheduler.dart';
 import '../constants.dart';
 
 class ScrollNotificationListener extends StatefulWidget {
@@ -20,16 +19,11 @@ class _ScrollNotificationListenerState extends State<ScrollNotificationListener>
 
   @override
   void initState() {
-    SchedulerBinding.instance!.addPostFrameCallback((_) {
-      _scrollController.addListener(() {
-        Future.delayed(Duration.zero, () {
-          if (_scrollController.position.pixels <= 0 && !dropped) {
-            yScrollPosition = -_scrollController.position.pixels;
-          }
-        });
-      });
-    }
-    );
+    _scrollController.addListener(() {
+        if (_scrollController.position.pixels <= 0 && !dropped) {
+          yScrollPosition = -_scrollController.position.pixels;
+        }
+    });
 
     super.initState();
   }

@@ -19,7 +19,7 @@ class CurrencyProvider implements CurrencyRepo {
     if(response.statusCode == 200) {
       return BinanceRestCurrencies.fromJson({...jsonDecode(response.body) as Map, ...{"delay": delay}, ...{"time": DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}});
     } else {
-      throw Exception('get binance code != 200');
+      throw Exception('get binance status code != 200');
     }
   }
 

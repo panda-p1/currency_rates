@@ -443,10 +443,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       ),
     );
   }
-  Widget Function(CurrencyStyles styles, Orientation orientation)
+  Widget Function(CurrencyStyles styles)
    _orientatedCurrencyWidget({required Crypto crypto, required Modal_RequestType requestFrom}) {
-    return (CurrencyStyles styles, Orientation orientation) {
-      return _listenableCurrencyWidget(styles: styles, crypto: crypto, requestFrom: requestFrom, orientation: orientation);
+    return (CurrencyStyles styles) {
+      return _listenableCurrencyWidget(styles: styles, crypto: crypto, requestFrom: requestFrom);
     };
   }
 
@@ -542,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               if(e == null) {
                 return _cryptoWaiter();
               }
-              return e(styles, orientation);
+              return e(styles);
             }).toList();
             if (orientation == Orientation.portrait) {
 
@@ -600,8 +600,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       context.read<CryptoBloc>().add(CryptoRemovePair(pair: CryptoFromBackendHelper.getCurrencyTypeByName(name), requestFrom: requestFrom));
   }
 
-  Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required Crypto crypto, required Orientation orientation}) {
-
+  Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required Crypto crypto}) {
+    print(styles is PortraitStyles);
     return ValueListenableBuilder<bool>(
       valueListenable: isEditingMode,
       builder: (_, mode, __) => InkWell(
@@ -618,19 +618,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if(mode && orientation == Orientation.portrait) IconButton(onPressed: () => _onDeletePair(crypto.name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+            if(mode && styles is PortraitStyles) IconButton(onPressed: () => _onDeletePair(crypto.name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
 
             Expanded(
               child: CurrencyWidget(
                 styles: styles,
                 currencyPrice: crypto.price,
                 currencyName: crypto.name,
-                deleteIcon: orientation == Orientation.landscape && mode,
+                deleteIcon:  styles is LandscapeStyles && mode,
                 onDeleteIconPress: () => _onDeletePair(crypto.name, requestFrom)
               ),
             ),
 
-            if(mode && orientation == Orientation.portrait) IconButton(onPressed: null, icon: Icon(Icons.format_align_justify_outlined )),
+            if(mode && styles is PortraitStyles) IconButton(onPressed: null, icon: Icon(Icons.format_align_justify_outlined )),
 
           ],
         ),
@@ -665,7 +665,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         builder: (_, orientation, __) {
           final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
           final styledItems = items.where((element) => element!=null).map<Widget>((e) {
-            return e!(styles, orientation);
+            return e!(styles);
           }).toList();
           if(orientation == Orientation.portrait) {
             return ValueListenableBuilder<bool>(
