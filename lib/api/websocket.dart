@@ -9,11 +9,11 @@ import '../constants.dart';
 import '../tools.dart';
 import 'localData.dart';
 
-const BTCUSDURL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker';
-const ETHUSDURL = 'wss://stream.binance.com:9443/stream?streams=ethusdt@bookTicker';
-const DOGEUSDURL = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@bookTicker';
-const BTCRUBURL = 'wss://stream.binance.com:9443/stream?streams=btcrub@bookTicker';
-const BTCEURURL = 'wss://stream.binance.com:9443/stream?streams=btceur@bookTicker';
+const BTCUSDURL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@ticker';
+const ETHUSDURL = 'wss://stream.binance.com:9443/stream?streams=ethusdt@ticker';
+const DOGEUSDURL = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@ticker';
+const BTCRUBURL = 'wss://stream.binance.com:9443/stream?streams=btcrub@ticker';
+const BTCEURURL = 'wss://stream.binance.com:9443/stream?streams=btceur@ticker';
 
 Map<Currency_Pairs,List<Currency_Pairs>> currencyChains = {
   Currency_Pairs.btcusd: [Currency_Pairs.btcusd, Currency_Pairs.usdrub, Currency_Pairs.eurusd],
@@ -147,6 +147,7 @@ class NotificationController {
     }
 
     channels[pair]!.listen((streamData) {
+      print(streamData);
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
       if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;

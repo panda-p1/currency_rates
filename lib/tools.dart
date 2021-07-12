@@ -88,8 +88,9 @@ class CryptoFromBackendHelper {
     var price = _getPrice(crypto);
     var type = _getCurrencyType(crypto);
     var name = _getName(crypto);
+    var percentage = crypto['P'].toString();
     var queryName = crypto['s'];
-    return Crypto(name: name, price: price, type: type, queryName: queryName);
+    return Crypto(name: name, price: price, type: type, queryName: queryName, changePercent: percentage);
   }
 }
 

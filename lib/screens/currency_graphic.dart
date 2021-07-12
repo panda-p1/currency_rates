@@ -5,7 +5,6 @@ import 'package:currencies_pages/bloc/currency/events.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/model/graphic_price.dart';
 import 'package:currencies_pages/model/crypto.dart';
-import 'package:currencies_pages/widgets/currency_widget.dart';
 import 'package:currencies_pages/widgets/horizontal_currency.dart';
 import 'package:currencies_pages/widgets/interval_button.dart';
 
@@ -17,17 +16,6 @@ import '../constants.dart';
 import '../styles.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 
-const INTERVALS = {
-  '1H': '1h',
-  '2H': '2h',
-  '6H': '6h',
-  '12H': '12h',
-  '1D': '1d',
-  '7D': '1w',
-  '30D': '1M',
-  '1Y': ''
-};
-
 class SDI {
   final int date;
   final String interval;
@@ -35,6 +23,7 @@ class SDI {
 }
 
 Map<String, SDI> INTERVAL_DATE = {
+  '15m': SDI(date: DateTime.now().subtract(Duration(minutes: 15)).millisecondsSinceEpoch, interval: '1m' ),
   '1H': SDI(date: DateTime.now().subtract(Duration(hours: 1)).millisecondsSinceEpoch, interval: '1m' ),
   '2H': SDI(date: DateTime.now().subtract(Duration(hours: 2)).millisecondsSinceEpoch, interval: '1m' ),
   '6H': SDI(date: DateTime.now().subtract(Duration(hours: 6)).millisecondsSinceEpoch, interval: '3m' ),
@@ -55,9 +44,9 @@ class CurrencyGraphic extends StatefulWidget {
 }
 
 class _CurrencyGraphicState extends State<CurrencyGraphic> {
-  int pressedBtnIdx = 5;
-  double min = 0;
-  double max = 0;
+  int pressedBtnIdx = 0;
+
+  List<GraphicPrice> prices = [];
 
   @override
   void initState() {
@@ -137,11 +126,11 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Wrap(
-        children: INTERVALS.keys.toList().map((e) {
+        children: INTERVAL_DATE.keys.toList().map((e) {
           return Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: IntervalButton(
-              onClick: () => _onIntervalButtonClick(e), text: e, clicked: INTERVALS.keys.toList().indexOf(e) == pressedBtnIdx,),
+              onClick: () => _onIntervalButtonClick(e), text: e, clicked: INTERVAL_DATE.keys.toList().indexOf(e) == pressedBtnIdx,),
           );
         }).toList(),
       ),
@@ -150,8 +139,7 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
   Widget _bodyUI() {
     return BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
       if(state is GraphicPriceLoaded) {
-        min = state.prices.map((e) => double.parse(e.price)).reduce(math.min);
-        max = state.prices.map((e) => double.parse(e.price)).reduce(math.max);
+
         return _graphic(state.prices);
       }
       if(state is CurrenciesLoading) {
@@ -183,16 +171,11 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
   }
 
   Widget _graphic(List<GraphicPrice> prices) {
-    prices.forEach((element) {
-      print(element.time);
-    });
-    print(prices.length);
     return _sized(
       child: charts.TimeSeriesChart(
 
         [
           charts.Series<GraphicPrice, DateTime>(
-
             id: widget.crypto.queryName,
             colorFn: (_, __) => charts.ColorUtil.fromDartColor(Theme.of(context).textTheme.bodyText1!.color!),
             domainFn: (GraphicPrice sales, _) => sales.time,

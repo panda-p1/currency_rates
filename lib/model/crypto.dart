@@ -6,8 +6,9 @@ class Crypto {
   final String price;
   final String name;
   final String queryName;
+  final String? changePercent;
   final Currency_Pairs type;
-  Crypto({required this.price, required this.queryName, required this.name, required this.type});
+  Crypto({required this.price, required this.queryName, this.changePercent, required this.name, required this.type});
   factory Crypto.fromJson(json) {
     return Crypto(
         price: json['price'],
