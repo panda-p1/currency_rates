@@ -1,9 +1,10 @@
 import 'dart:async';
 
+import 'package:currencies_pages/model/graphic_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-// import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../styles.dart';
 
@@ -27,6 +28,54 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   Color? color;
   String? previousPrice;
   bool animate = false;
+  ChartSeriesController? _chartSeriesController;
+
+  //Initialize the data source
+  List<GraphicPrice> chartData = [];
+
+  @override
+  void didUpdateWidget(oldWidget) {
+    if(oldWidget.currencyPrice != widget.currencyPrice) {
+
+      chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
+
+      if(chartData.length == 20) {
+        chartData.removeAt(0);
+        _chartSeriesController!.updateDataSource(
+          addedDataIndexes: <int>[chartData.length - 1],
+          removedDataIndexes: <int>[0],
+        );
+      } else {
+        _chartSeriesController?.updateDataSource(
+          addedDataIndexes: <int>[chartData.length - 1],
+        );
+      }
+    }
+
+    super.didUpdateWidget(oldWidget);
+  }
+
+  SfCartesianChart _buildLiveLineChart() {
+    return SfCartesianChart(
+        plotAreaBorderWidth: 0,
+        primaryXAxis: DateTimeAxis(),
+        primaryYAxis: NumericAxis(
+            axisLine: const AxisLine(width: 0),
+            majorTickLines: const MajorTickLines(size: 0)),
+        series: <LineSeries<GraphicPrice, DateTime>>[
+          LineSeries<GraphicPrice, DateTime>(
+            onRendererCreated: (ChartSeriesController controller) {
+              _chartSeriesController = controller;
+            },
+            dataSource: chartData,
+            color: const Color.fromRGBO(192, 108, 132, 1),
+            xValueMapper: (GraphicPrice sales, _) => sales.time,
+            yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+            animationDuration: 0,
+          )
+        ]);
+  }
+
   @override
   void dispose() {
     _timer.cancel();
@@ -39,6 +88,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     });
     super.initState();
   }
+
+
   _callback() {
     if(previousPrice != null) {
       final pp = double.parse(previousPrice!);
@@ -67,7 +118,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       _callback();
     }
     return SizedBox(
-      height: widget.styles.currencyWidgetHeight() + 1,
+      // height: widget.styles.currencyWidgetHeight() + 1,
       child: Column(
         children: [
           Padding(
@@ -82,6 +133,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
               ],
             ),
           ),
+          _buildLiveLineChart(),
           Divider(),
         ],
       ),
@@ -117,11 +169,6 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     );
   }
   Widget _currencyPrice() {
-    // String percents = '';
-    //
-    // if(widget.percent != null) {
-    //   // percents = (100 * ((double.parse(widget.currencyPrice) / double.parse(widget.percent!)) - 1)).toStringAsFixed(2);
-    // }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
