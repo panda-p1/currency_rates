@@ -16,7 +16,8 @@ final darkTheme = ThemeData(
   backgroundColor: const Color(0xFF212121),
   accentColor: Colors.white,
   accentIconTheme: IconThemeData(color: Colors.black),
-  dividerColor: Color.fromRGBO(48, 48, 48, 1),
+  dividerColor: Color.fromRGBO(250, 250, 250, 1),
+
 );
 
 final lightTheme = ThemeData(
@@ -26,7 +27,8 @@ final lightTheme = ThemeData(
   backgroundColor: const Color(0xFFE5E5E5),
   accentColor: Colors.black,
   accentIconTheme: IconThemeData(color: Colors.white),
-  dividerColor: Color.fromRGBO(250, 250, 250, 1),
+  dividerColor: Color.fromRGBO(48, 48, 48, 1),
+
 );
 
 

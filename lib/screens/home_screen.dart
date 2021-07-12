@@ -40,6 +40,8 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
+  var firstCryptoPrices = {};
+
   var itemsLength = 0;
   var key = UniqueKey();
 
@@ -530,6 +532,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           if(crypto == null) {
             return null;
           }
+          if(!firstCryptoPrices.containsKey(crypto.name)) {
+            firstCryptoPrices[crypto.name] = crypto.price;
+          }
           return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.internet);
         }).toList();
 
@@ -622,6 +627,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
             Expanded(
               child: CurrencyWidget(
+                percent: crypto.changePercent,
                 styles: styles,
                 currencyPrice: crypto.price,
                 currencyName: crypto.name,

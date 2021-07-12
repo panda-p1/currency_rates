@@ -8,13 +8,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 
 import 'api/currenciesProvider.dart';
-import 'api/localData.dart';
 import 'bloc/crypto/bloc.dart';
-
+  
 void main() {
   runApp(BlocProvider(
       create: (BuildContext context) => LocalDataBloc.getInstance(),
-      child: MyApp()));
+      child: MyApp()
+  ));
 }
 
 class MyApp extends StatefulWidget {
@@ -26,7 +26,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     context.read<LocalDataBloc>().add(GetTheme());
-
     super.initState();
   }
 
@@ -36,22 +35,22 @@ class _MyAppState extends State<MyApp> {
       if(state is ThemeLoaded) {
         return _buildWithTheme(context, state.theme);
       }
-
       return Container();
     });
   }
 
-  _buildWithTheme(BuildContext context, ThemeData theme) {
+  Widget _buildWithTheme(BuildContext context, ThemeData theme) {
       return MaterialApp(
         title: 'Flutter Demo',
         theme: theme,
-        home:MultiBlocProvider(
+        home: MultiBlocProvider(
           providers: [
             BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
             BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
             BlocProvider(create: (BuildContext context) => CryptoBloc(),),
           ],
-          child: HomeScreen(),)
+          child: HomeScreen(),
+        )
       );
   }
 }
