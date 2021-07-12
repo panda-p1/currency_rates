@@ -72,7 +72,6 @@ class LocalReorderPair extends CryptoEvent {
   List<Object> get props => [newIdx, pair];
 }
 
-
 class ReorderPair extends CryptoEvent {
   final int newIdx;
   final Currency_Pairs pair;
@@ -80,8 +79,6 @@ class ReorderPair extends CryptoEvent {
   @override
   List<Object> get props => [newIdx, pair];
 }
-
-
 
 class CheckIfObjIsEmpty extends CryptoEvent {
   @override

@@ -75,15 +75,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 _styledText('Delay'),
                 Spacer(),
                 state is DelayLoaded
-
                     ? IconButton(
                     splashRadius: ConfigStyles.arrowSplashRadius,
-                    onPressed: () {
-                      if(state.delay > 4) {
+                    onPressed: state.delay > 4 ? () {
                         context.read<LocalDataBloc>().add(DecreaseDelay());
                         context.read<LocalDataBloc>().add(GetTheme());
-                      }
-                    }, icon: _styledIcon(Icons.arrow_left_outlined, color: state.delay <= 4 ? Colors.grey : null,))
+                    } : null,
+                    icon: _styledIcon(Icons.arrow_left_outlined, color: state.delay <= 4 ? Colors.grey : null,))
 
                     : IconButton(splashRadius: ConfigStyles.arrowSplashRadius, onPressed: () {}, icon: _styledIcon(Icons.arrow_left_outlined),),
 

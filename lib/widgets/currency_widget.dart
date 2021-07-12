@@ -1,126 +1,114 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-import '../constants.dart';
 import '../styles.dart';
 
 class CurrencyWidget extends StatefulWidget {
-  final String currencyName;
+  final String? currencyName;
   final String currencyPrice;
-  final Grad_Direction? gradDirection;
   final CurrencyStyles styles;
-  final Color? initColor;
-  final Color finalColor;
-  final bool animated;
   final bool? deleteIcon;
   final Function? onDeleteIconPress;
   CurrencyWidget({Key? key,
     this.deleteIcon, this.onDeleteIconPress,
-    required this.finalColor,
-    required this.animated, required this.currencyName,
-    required this.currencyPrice, this.gradDirection,
-    required this.styles, this.initColor}) : super(key: key);
+    this.currencyName,
+    required this.currencyPrice,
+    required this.styles}) : super(key: key);
   @override
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
 }
 class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
-  late Animation<Color?> animationColor;
-  AnimationController? controller;
-
-  @override
-  void initState() {
-    if(widget.animated) {
-      controller = AnimationController(
-        vsync: this,
-        duration: Duration(milliseconds: 2000),);
-
-      animationColor = ColorTween(begin: widget.initColor, end: widget.finalColor)
-          .animate(controller!);
-    }
-
-    super.initState();
-  }
+  late Timer _timer;
+  Color? color;
+  String? previousPrice;
+  bool animate = false;
   @override
   void dispose() {
-    if(controller != null) {
-      controller!.dispose();
-    }
+    _timer.cancel();
     super.dispose();
   }
   @override
-  void didUpdateWidget(oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if(widget.animated) {
-      this.updateAnimation();
-    }
-  }
-
-  void updateAnimation() {
-    setState(() {
-      animationColor = ColorTween(begin: widget.initColor, end: widget.finalColor)
-          .animate(controller!);
+  void initState() {
+    _timer = Timer(Duration(milliseconds: 400), () {
+      _timer.cancel();
     });
-
-    if(controller!.status == AnimationStatus.completed || controller!.status == AnimationStatus.dismissed ||
-        controller!.status == AnimationStatus.forward
-    ) {
-      controller!.value = 0;
-      controller!.forward();
-    }
+    super.initState();
   }
-
+  _callback() {
+    if(previousPrice != null) {
+      final pp = double.parse(previousPrice!);
+      final cp = double.parse(widget.currencyPrice);
+      if(pp < cp) {
+        _timer = Timer(Duration(milliseconds: 400), () {
+          _timer.cancel();
+        });
+        color = Colors.blue;
+      } else {
+        if(pp == cp) {
+          color = null;
+        } else {
+          color = Colors.red;
+          _timer = Timer(Duration(milliseconds: 400), () {
+            _timer.cancel();
+          });
+        }
+      }
+    }
+    previousPrice = widget.currencyPrice;
+  }
   @override
   Widget build(BuildContext context) {
+    if(!_timer.isActive) {
+      _callback();
+    }
     return SizedBox(
       height: widget.styles.currencyWidgetHeight(),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: _currencyName()
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                  widget.currencyPrice.toString(),
-                  style: TextStyle(
-                      color: widget.finalColor,
-                      fontSize: widget.styles.currencyPriceFontSize())),
-              // Text(
-              //     widget.currencyPrice.toString(),
-              //     style: TextStyle(
-              //         color: widget.finalColor,
-              //         fontSize: widget.styles.currencyPriceFontSize())),
-              if(widget.gradDirection != null)
-                widget.gradDirection == Grad_Direction.down
-                    ? Icon(Icons.arrow_drop_down_outlined, size: widget.styles.iconsSize(),)
-                    : Icon(Icons.arrow_drop_up_outlined, size: widget.styles.iconsSize(),)
-            ],
-          ),
+          _currencyName(),
+          _currencyPrice(),
         ],
       ),
     );
   }
 
+
+
   Widget _currencyName() {
-    return Stack(
-      clipBehavior: Clip.none, children: [
-      Text(
-        widget.currencyName,
+    if(widget.currencyName == null) {
+      return Container();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Stack(
+        clipBehavior: Clip.none, children: [
+        Text(
+          widget.currencyName!,
+          style: TextStyle(
+              fontSize: widget.styles.currencyNameFontSize(),
+              color: widget.styles.currencyNameFontColor()),),
+        if(widget.deleteIcon != null && widget.deleteIcon!)
+          Positioned(
+              right: -20,
+              top: -15,
+              child: IconButton(
+                icon: Icon(Icons.remove_circle_sharp, color: Colors.red, size: 30),
+                onPressed: () => widget.onDeleteIconPress!(),))
+      ],
+      ),
+    );
+  }
+  Widget _currencyPrice() {
+    return Text(
+        NumberFormat.currency(locale: 'eu', symbol: '').format(double.parse(widget.currencyPrice)),
         style: TextStyle(
-            fontSize: widget.styles.currencyNameFontSize(),
-            color: widget.styles.currencyNameFontColor()),),
-      if(widget.deleteIcon != null && widget.deleteIcon!)
-        Positioned(
-            right: -20,
-            top: -15,
-            child: IconButton(
-              icon: Icon(Icons.remove_circle_sharp, color: Colors.red, size: 30),
-              onPressed: () => widget.onDeleteIconPress!(),))
-    ],
+            fontSize: widget.styles.currencyPriceFontSize(),
+            color: color
+        )
     );
   }
 }

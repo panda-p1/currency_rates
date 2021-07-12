@@ -22,6 +22,9 @@ class Utils {
 
   static String makeShortPrice(double price) {
     var stringPrice = price.toString();
+    while(stringPrice.length < 9) {
+      stringPrice+='0';
+    }
     return stringPrice = stringPrice.length > 9 ? stringPrice.substring(0, 9) : stringPrice;
   }
 
@@ -85,7 +88,8 @@ class CryptoFromBackendHelper {
     var price = _getPrice(crypto);
     var type = _getCurrencyType(crypto);
     var name = _getName(crypto);
-    return Crypto(name: name, price: price, type: type);
+    var queryName = crypto['s'];
+    return Crypto(name: name, price: price, type: type, queryName: queryName);
   }
 }
 
