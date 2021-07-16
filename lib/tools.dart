@@ -54,7 +54,7 @@ class CryptoFromBackendHelper {
   static Map<Currency_Pairs, String> _nameByCurrencyType = {
     Currency_Pairs.btcusd: 'BTC-USD',
     Currency_Pairs.ethusd: 'ETH-USD',
-    Currency_Pairs.dogeusd: 'DOGE-USD',
+    // Currency_Pairs.dogeusd: 'DOGE-USD',
     Currency_Pairs.btcrub: 'BTC-RUB',
     Currency_Pairs.btceur: 'BTC-EUR',
     Currency_Pairs.usdrub: 'USD-RUB',

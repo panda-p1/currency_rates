@@ -13,9 +13,13 @@ class CurrencyWidget extends StatefulWidget {
   final String currencyPrice;
   final CurrencyStyles styles;
   final bool? deleteIcon;
+  final String? oldPrice;
   final Function? onDeleteIconPress;
   final String? percent;
+  final bool isEditingMode;
   CurrencyWidget({Key? key,
+    required this.isEditingMode,
+    this.oldPrice,
     this.deleteIcon, this.onDeleteIconPress,
     this.currencyName, this.percent,
     required this.currencyPrice,
@@ -24,56 +28,98 @@ class CurrencyWidget extends StatefulWidget {
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
 }
 class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
+  double? prevYmax;
+  double? prevYmin;
   late Timer _timer;
   Color? color;
   String? previousPrice;
   bool animate = false;
-  ChartSeriesController? _chartSeriesController;
-
+  List<GraphicPrice> dashedLine = [];
   //Initialize the data source
   List<GraphicPrice> chartData = [];
-
+  @override
+  void initState() {
+    _timer = Timer(Duration(milliseconds: 400), () {
+      _timer.cancel();
+    });
+    for(var i = 0; i < 21; i++) {
+      dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+    }
+    super.initState();
+  }
   @override
   void didUpdateWidget(oldWidget) {
+    dashedLine = [];
+    for(var i = 0; i < 21; i++) {
+      dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+    }
     if(oldWidget.currencyPrice != widget.currencyPrice) {
-
       chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
 
-      if(chartData.length == 20) {
+      dashedLine = [];
+      for(var i = 0; i < 21; i++) {
+        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+      }
+      if(chartData.length == 70) {
         chartData.removeAt(0);
-        _chartSeriesController!.updateDataSource(
-          addedDataIndexes: <int>[chartData.length - 1],
-          removedDataIndexes: <int>[0],
-        );
       } else {
-        _chartSeriesController?.updateDataSource(
-          addedDataIndexes: <int>[chartData.length - 1],
-        );
+        
       }
     }
 
     super.didUpdateWidget(oldWidget);
   }
 
-  SfCartesianChart _buildLiveLineChart() {
-    return SfCartesianChart(
-        plotAreaBorderWidth: 0,
-        primaryXAxis: DateTimeAxis(),
-        primaryYAxis: NumericAxis(
-            axisLine: const AxisLine(width: 0),
-            majorTickLines: const MajorTickLines(size: 0)),
-        series: <LineSeries<GraphicPrice, DateTime>>[
-          LineSeries<GraphicPrice, DateTime>(
-            onRendererCreated: (ChartSeriesController controller) {
-              _chartSeriesController = controller;
-            },
-            dataSource: chartData,
-            color: const Color.fromRGBO(192, 108, 132, 1),
-            xValueMapper: (GraphicPrice sales, _) => sales.time,
-            yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
-            animationDuration: 0,
-          )
-        ]);
+  Widget _buildLiveLineChart() {
+    final yMax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+    final yMin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+    if(prevYmin == null) prevYmin = yMin;
+    if(prevYmax == null) prevYmax = yMax;
+    if(prevYmax! < yMax) {
+      prevYmax = yMax;
+    }
+    if(prevYmin! > yMin) {
+      prevYmin = yMin;
+    }
+
+    return SizedBox(
+      height: widget.styles.currencyWidgetHeight() + 1,
+      width: 100,
+      child: SfCartesianChart(
+          plotAreaBorderWidth: 0,
+          primaryXAxis: DateTimeAxis(
+              maximum: DateTime.now() ,
+              minimum: DateTime.now().subtract(Duration(minutes: 1)),
+              isVisible: false
+          ),
+          primaryYAxis: NumericAxis(
+              maximum: prevYmax! + prevYmax! * 0.000001,
+              minimum: prevYmin! - prevYmin! * 0.000001,
+              // autoScrollingMode: AutoScrollingMode.end,
+              // anchorRangeToVisiblePoints: true,
+              // rangePadding: ChartRangePadding.none,
+              isVisible: false,
+          ),
+          series: <LineSeries<GraphicPrice, DateTime>>[
+            LineSeries<GraphicPrice, DateTime>(
+              dataSource: dashedLine,
+              dashArray: <double>[3.5,3.5],
+              color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+              xValueMapper: (GraphicPrice sales, _) => sales.time,
+              yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+                animationDuration: 0
+
+            ),
+            LineSeries<GraphicPrice, DateTime>(
+              dataSource: chartData,
+              color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+              xValueMapper: (GraphicPrice sales, _) => sales.time,
+              yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+              animationDuration: 0
+            ),
+
+          ]),
+    );
   }
 
   @override
@@ -81,14 +127,6 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     _timer.cancel();
     super.dispose();
   }
-  @override
-  void initState() {
-    _timer = Timer(Duration(milliseconds: 400), () {
-      _timer.cancel();
-    });
-    super.initState();
-  }
-
 
   _callback() {
     if(previousPrice != null) {
@@ -118,7 +156,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       _callback();
     }
     return SizedBox(
-      // height: widget.styles.currencyWidgetHeight() + 1,
+      height: widget.styles.currencyWidgetHeight() + 5,
+
       child: Column(
         children: [
           Padding(
@@ -129,12 +168,13 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
               children: [
                 _currencyName(),
                 Spacer(),
-                _currencyPrice(),
+                _buildLiveLineChart(),
+                if(!widget.isEditingMode) _currencyPrice(),
               ],
             ),
           ),
-          _buildLiveLineChart(),
-          Divider(),
+          // _buildLiveLineChart(),
+          // Divider(),
         ],
       ),
     );
@@ -170,33 +210,42 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   }
   Widget _currencyPrice() {
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-            NumberFormat.currency(locale: 'eu', symbol: '').format(double.parse(widget.currencyPrice)),
-            style: TextStyle(
-                fontSize: widget.styles.currencyPriceFontSize(),
-                color: color
-            )
-        ),
-        if(widget.percent != null)
-          Container(
-          height: 30,
-          alignment: Alignment.centerRight,
-            decoration: BoxDecoration(
-                borderRadius: const BorderRadius.all(Radius.circular(5)),
-                color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                widget.percent! + ' %',
+    return SizedBox(
+      width: widget.styles.currencyPriceWidth(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+              NumberFormat.currency(locale: 'eu', symbol: '').format(double.parse(widget.currencyPrice)),
+              style: TextStyle(
+                  fontSize: widget.styles.currencyPriceFontSize(),
+                  color: color
               ),
+              overflow: TextOverflow.ellipsis,
+          ),
+          if(widget.percent != null)
+            Row(
+              children: [
+                Spacer(),
+                Container(
+                    height: 30,
+                    alignment: Alignment.centerRight,
+                    decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.all(Radius.circular(5)),
+                        color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        widget.percent! + ' %',
+                      ),
+                    )
+                ),
+              ],
             )
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

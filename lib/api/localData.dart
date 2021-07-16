@@ -55,14 +55,10 @@ class LocalDataProvider implements LocalDataRepo {
     Future<BinanceRestCurrencies> getBinanceRestapiCurrencies() async {
       final prefs = await SharedPreferences.getInstance();
       final currencies = BinanceRestCurrencies.fromJson(jsonDecode(prefs.getString('binanceCurrencies')!));
-      print('LocalDataProvider BinanceRestCurrencies currencies:');
-      print(currencies);
       return currencies;
     }
     Future<Null> storeBinanceRestapiCurrencies(BinanceRestCurrencies currencies) async {
       final prefs = await SharedPreferences.getInstance();
-      print('LocalDataProvider storeBinanceRestapiCurrencies jsonEncode(currencies):');
-      print(jsonEncode(currencies));
       prefs.setString('binanceCurrencies', jsonEncode(currencies));
     }
     Future<Null> reorderPairs(int newIdx, Currency_Pairs pair) async {
@@ -119,7 +115,11 @@ class LocalDataProvider implements LocalDataRepo {
   @override
   Future<Null> saveDefaultPairs() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('chosenPairs', jsonEncode(Currency_Pairs.values.map((e) => Utils.getValueAfterDot(e)).toList()));
+    prefs.setString('chosenPairs', jsonEncode(
+        Currency_Pairs.values
+            .where((element) => Default_Currency_Pairs.values.map((e) => Utils.getValueAfterDot(e)).toList()
+            .contains(Utils.getValueAfterDot(element))).toList().map((e) => Utils.getValueAfterDot(e))
+    ));
     return null;
   }
   @override

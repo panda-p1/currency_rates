@@ -36,7 +36,6 @@ enum Theme_Types {
 enum Currency_Pairs {
   btcusd,
   ethusd,
-  dogeusd,
   btcrub,
   btceur,
   eurusd,
@@ -47,10 +46,9 @@ enum Currency_Pairs {
 enum Default_Currency_Pairs {
   btcusd,
   ethusd,
-  dogeusd,
   btcrub,
   btceur,
-  eurusd,
-  eurrub,
-  usdrub
+  // eurusd,
+  // eurrub,
+  // usdrub
 }

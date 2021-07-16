@@ -30,10 +30,10 @@ class CryptoError extends CryptoState {
 }
 
 class CryptoLoaded extends CryptoState {
-  final StreamController<Map<Currency_Pairs, Crypto?>> streamController;
-  CryptoLoaded({required this.streamController});
+  final Map<Currency_Pairs, StreamController<Crypto?>> streamControllers;
+  CryptoLoaded({required this.streamControllers});
   @override
-  List<Object> get props => [streamController];
+  List<Object> get props => [streamControllers];
 }
 class CryptoModal extends CryptoState {
   final List<Currency_Pairs> confirmationDetails;

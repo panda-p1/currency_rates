@@ -1,5 +1,6 @@
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:currencies_pages/model/graphic_price.dart';
+import 'package:currencies_pages/model/ticker_details.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class CurrenciesState extends Equatable {
@@ -15,6 +16,17 @@ class CurrenciesInitState extends CurrenciesState {
 
 class CurrenciesLoading extends CurrenciesState {
   CurrenciesLoading();
+  @override
+  List<Object> get props => [];
+}
+class CurrencyDetails extends CurrenciesState {
+  final TickerDetails details;
+  CurrencyDetails({required this.details});
+  @override
+  List<Object> get props => [];
+}
+class CurrencyDetailsLoading extends CurrenciesState {
+  CurrencyDetailsLoading();
   @override
   List<Object> get props => [];
 }

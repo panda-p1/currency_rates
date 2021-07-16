@@ -5,6 +5,7 @@ abstract class CurrencyStyles {
   double currencyPriceFontSize();
   Color? currencyNameFontColor();
   double currencyWidgetHeight();
+  double currencyPriceWidth();
 }
 
 class LayoutStyles {
@@ -14,10 +15,11 @@ class LayoutStyles {
 }
 
 class PortraitStyles extends CurrencyStyles {
-  double currencyNameFontSize() => 30;
-  double currencyPriceFontSize() => 30;
+  double currencyNameFontSize() => 20;
+  double currencyPriceFontSize() => 22;
   Color currencyNameFontColor() => Colors.grey[600]!;
-  double currencyWidgetHeight() => 80;
+  double currencyWidgetHeight() => 82;
+  double currencyPriceWidth() => 150;
 }
 
 class LandscapeStyles extends CurrencyStyles {
@@ -25,6 +27,8 @@ class LandscapeStyles extends CurrencyStyles {
   double currencyPriceFontSize() => 70;
   Color currencyNameFontColor() => Colors.grey[600]!;
   double currencyWidgetHeight() => 220;
+  double currencyPriceWidth() => 30;
+
 }
 
 class RingStyles {

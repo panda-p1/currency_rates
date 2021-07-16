@@ -30,16 +30,16 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       if(isEmpty) {
         yield CryptoEmpty();
       } else {
-        final controller = notifCtrl.streamController;
-        yield CryptoLoaded(streamController: controller);
+        final controller = notifCtrl.streamControllers;
+        yield CryptoLoaded(streamControllers: controller);
       }
     }
     if(event is CryptoInitConnection) {
       try {
         yield CryptoLoading();
         await notifCtrl.initWebSocketConnection();
-        final controller = notifCtrl.streamController;
-        yield CryptoLoaded(streamController: controller);
+        final controller = notifCtrl.streamControllers;
+        yield CryptoLoaded(streamControllers: controller);
       } catch(e) {
         print(e);
         print('crypto error caught');
@@ -77,8 +77,8 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         }
 
         await notifCtrl.confirmedCloseConnection(pairs);
-        final controller = notifCtrl.streamController;
-        yield CryptoLoaded(streamController: controller);
+        final controller = notifCtrl.streamControllers;
+        yield CryptoLoaded(streamControllers: controller);
       }
       if(event.requestFrom == Modal_RequestType.local) {
         for(var pair in pairs) {
@@ -99,8 +99,8 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       try {
         print('retry connection');
         await notifCtrl.initWebSocketConnection();
-        final controller = notifCtrl.streamController;
-        yield CryptoLoaded(streamController: controller);
+        final controller = notifCtrl.streamControllers;
+        yield CryptoLoaded(streamControllers: controller);
       } catch(e) {
         print(e);
         print('retry connection error');

@@ -3,6 +3,7 @@ import 'dart:core';
 import 'dart:ui';
 
 import 'package:currencies_pages/api/currenciesProvider.dart';
+import 'package:currencies_pages/model/graphic_price.dart';
 import 'package:currencies_pages/screens/currency_graphic.dart';
 import 'package:currencies_pages/widgets/bottom_circle_loader.dart';
 import 'package:currencies_pages/widgets/crypto_loader.dart';
@@ -23,6 +24,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../constants.dart';
 import '../styles.dart';
@@ -40,6 +42,10 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
+  Map<String, ChartSeriesController?> _chartSeriesController = {};
+
+  Map<String, List<GraphicPrice>> chartData = {};
+
   var firstCryptoPrices = {};
 
   var itemsLength = 0;
@@ -47,11 +53,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   bool _isInForeground = true;
 
-  StreamController<Map<Currency_Pairs, Crypto?>>? cryptoController;
+  Map<Currency_Pairs, StreamController<Crypto?>> cryptoController = {};
 
   Timer? retryConnectionTimer;
 
-  Map<Currency_Type, num> previousCurrencies = {};
+  Map<String, String> previousCurrencies = {};
   String succeedTime = '';
   Statuses lastStatus = Statuses.online;
   bool topLoading = false;
@@ -131,14 +137,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   }
                 },
               ),
-              ValueListenableBuilder<bool>(
-                  valueListenable: isEditingMode,
-                  builder: (_, mode,__) {
-                    return TextButton(
-                      onPressed: () {isEditingMode.value = !mode;},
-                      child: Text(mode ? 'Done' : 'Edit', style: TextStyle(color: Colors.blue[400]),),
-                    );
-                  }),
+              // ValueListenableBuilder<bool>(
+              //     valueListenable: isEditingMode,
+              //     builder: (_, mode,__) {
+              //       return TextButton(
+              //         onPressed: () {
+              //           // isEditingMode.value = !mode;
+              //           },
+              //         child: Text(mode ? 'Done' : 'Edit', style: TextStyle(color: Colors.blue[400]),),
+              //       );
+              //     }),
             ],
           ),
         ),
@@ -305,7 +313,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return _UI(items: [_localCryptoLoaded(state.currencies)]);
       }
       if(state is CryptoLoaded) {
-        return _UI(items: [_cryptoLoaded(state.streamController)]);
+
+        return _UI(items: [_cryptoLoaded(state.streamControllers)]);
       }
       if(state is CryptoEmpty) {
         return _banner();
@@ -315,62 +324,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   }
 
-  // @TODO BINANCE WITH RESTAPI BODYUI
-  // Widget _bodyUI(Currencies currencies) {
-  //   // final f = intl.NumberFormat();
-  //   // Color initColor = Theme.of(context).accentColor;
-  //   final items = currencies.arrayOfCurrencies.asMap().entries.map((entry) {
-  //     final currency = entry.value;
-  //     if(entry.key == 0) {
-  //       return BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
-  //         // print(state);
-  //         if(state is CryptoError) {
-  //           return Container();
-  //         }
-  //         if(state is CryptoLoading) {
-  //           return CryptoLoading(styles: PortraitStyles(),);
-  //         }
-  //         if(state is LocalCryptoLoaded) {
-  //           print(state.currencies);
-  //           return _localCryptoLoaded(state.currencies);
-  //         }
-  //         if(state is CryptoLoaded) {
-  //           return _cryptoLoaded(state.streamController, state.confirmationDetails);
-  //         }
-  //         if(state is CryptoEmpty) {
-  //           return _banner();
-  //         }
-  //         return Container();
-  //       });
-  //     }
-  //     if(previousCurrencies.isNotEmpty) {
-  //       if(currency is Currency) {
-  //         if(currency is Currency) {
-  //           if(currency.price < previousCurrencies[currency.type]!) {
-  //             // initColor = Colors.red;
-  //           }
-  //           if(currency.price > previousCurrencies[currency.type]!) {
-  //             // initColor = Colors.blue;
-  //           }
-  //         }
-  //       }
-  //     }
-  //     return Container();
-  //   }).toList();
-  //
-  //   previousCurrencies = currencies.getCurrenciesAndTheirRates();
-  //
-  //   if(topLoading) {
-  //     Future.delayed(Duration(seconds: 1), () async {
-  //       setState(() {
-  //         topLoading = false;
-  //       });
-  //       controller.reset();
-  //     });
-  //   }
-  //
-  //   return _UI(items: items);
-  // }
+  SfCartesianChart _buildLiveLineChart(String cryptoName) {
+    return SfCartesianChart(
+        plotAreaBorderWidth: 0,
+        primaryXAxis: DateTimeAxis(),
+        primaryYAxis: NumericAxis(
+            axisLine: const AxisLine(width: 0),
+            majorTickLines: const MajorTickLines(size: 0)),
+        series: <LineSeries<GraphicPrice, DateTime>>[
+          LineSeries<GraphicPrice, DateTime>(
+            onRendererCreated: (ChartSeriesController controller) {
+              _chartSeriesController[cryptoName] = controller;
+            },
+            dataSource: chartData[cryptoName] == null ? [] : chartData[cryptoName]!,
+            color: const Color.fromRGBO(192, 108, 132, 1),
+            xValueMapper: (GraphicPrice sales, _) => sales.time,
+            yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+            animationDuration: 0,
+          )
+        ]);
+  }
 
   Widget _UI({required List<Widget> items}) {
     return _notifListener(
@@ -379,6 +352,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       ),
     );
   }
+
   Widget _footerUI({required Statuses status}) {
     final Statuses status1;
     if(status == Statuses.offline || status == Statuses.online) {
@@ -445,6 +419,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       ),
     );
   }
+
   Widget Function(CurrencyStyles styles)
    _orientatedCurrencyWidget({required Crypto crypto, required Modal_RequestType requestFrom}) {
     return (CurrencyStyles styles) {
@@ -500,105 +475,164 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  Widget _cryptoLoaded(StreamController<Map<Currency_Pairs, Crypto?>> streamController) {
+  Widget _cryptoLoaded(Map<Currency_Pairs, StreamController<Crypto?>> streamControllers) {
+
     // marker
-
-    if(cryptoController == null) {
-      cryptoController = streamController;
-    }
-    return StreamBuilder<Map<Currency_Pairs, Crypto?>>(
-      stream: streamController.stream,
-      builder: (_, snapshot) {
-        if(snapshot.hasError) {
-          if(snapshot.error is CryptoError) {
-            context.read<CryptoBloc>().add(GetLocalCrypto());
-          }
-          return Container();
-        }
-
-        if(!snapshot.hasData) {
-          context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
-          return CryptoLoader(styles: PortraitStyles(),);
-        }
-
-        final currencies = snapshot.data!;
-
-        if(currencies.isEmpty) {
-          context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
-        }
-        context.read<LocalDataBloc>().add(StoreCurrencies(currencies: currencies));
-
-        final items = currencies.values.map((crypto) {
-          if(crypto == null) {
-            return null;
-          }
-          if(!firstCryptoPrices.containsKey(crypto.name)) {
-            firstCryptoPrices[crypto.name] = crypto.price;
-          }
-          return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.internet);
-        }).toList();
-
-        return ValueListenableBuilder<Orientation>(
-          valueListenable: orientationUI,
-          builder: (_, orientation, __) {
-            final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
-
-            final styledItems = items.map<Widget>((e) {
-              if(e == null) {
-                return _cryptoWaiter();
-              }
-              return e(styles);
-            }).toList();
-            if (orientation == Orientation.portrait) {
-
-              return ValueListenableBuilder<bool>(
-                  valueListenable: isEditingMode,
-                  builder: (_, mode, __) {
-                    if(mode) {
-                      var wrap = ReorderableWrap(
-                        onReorder: (oldIdx, newIdx) {
-                          final pair = currencies.keys.toList()[oldIdx];
-                          context.read<CryptoBloc>().add(ReorderPair(newIdx: newIdx, pair: pair));
-                        },
-                        children: styledItems,
-                      );
-                      return SingleChildScrollView(child: wrap);
-                    }
-
-                    return SingleChildScrollView(
-                        child: Column(
-                            children: styledItems
-                        )
-                    );
-                  });
+    cryptoController = streamControllers;
+    final List<Widget> items = streamControllers.values.map((e) {
+      return StreamBuilder<Crypto?>(
+          stream: e.stream,
+          builder: (_, snapshot) {
+            if(!snapshot.hasData) {
+              return CryptoLoader(styles: PortraitStyles(),);
             }
-            if(orientation == Orientation.landscape) {
-              if(itemsLength != items.length) { // FIXED BUG line 110 pos 12: flutter: '_positions.isNotEmpty
-                itemsLength = items.length;
-                key = UniqueKey();
-              }
-              return SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
-                  child: Swiper(
-                    key: key,
-                    pagination: const SwiperPagination(
-                      alignment: Alignment.bottomCenter,
-                      builder: DotSwiperPaginationBuilder(
-                        color: Colors.grey,
-                      ),
-                    ),
-
-                    itemCount: items.length,
-                    itemBuilder: (BuildContext context, int index) => styledItems[index]
-                  )
-              );
+            final crypto = snapshot.data!;
+            if(!previousCurrencies.containsKey(crypto.name)) {
+              previousCurrencies[crypto.name] = crypto.price;
             }
-            return Container();
-          }
-        );
-      }
+            // if(chartData.containsKey(crypto.name)) {
+            //   chartData[crypto.name]!.add(GraphicPrice(
+            //       time: DateTime.now(), open: crypto.price, close: crypto.price));
+            //
+            //   if(chartData[crypto.name]!.length == 20) {
+            //     chartData[crypto.name]!.removeAt(0);
+            //     _chartSeriesController[crypto.name]!.updateDataSource(
+            //       addedDataIndexes: <int>[chartData[crypto.name]!.length - 1],
+            //       removedDataIndexes: <int>[0],
+            //     );
+            //   } else {
+            //     _chartSeriesController[crypto.name]?.updateDataSource(
+            //       addedDataIndexes: <int>[chartData.length - 1],
+            //     );
+            //   }
+            // } else {
+            //   chartData[crypto.name] = [GraphicPrice(time: DateTime.now(), open: crypto.price, close: crypto.price)];
+            // }
+
+            return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.internet)(PortraitStyles());
+      });
+    }).toList();
+    // final wrap = ReorderableWrap(
+    //   onReorder: (oldIdx, newIdx) {
+    //     final pair = streamControllers.keys.toList()[oldIdx];
+    //     context.read<CryptoBloc>().add(ReorderPair(newIdx: newIdx, pair: pair));
+    //   },
+    //   children: items,
+    // );
+    return Column(
+      children: items
     );
+    // return StreamBuilder<Map<Currency_Pairs, Crypto?>>(
+    //   stream: streamController.stream,
+    //   builder: (_, snapshot) {
+    //     if(snapshot.hasError) {
+    //       if(snapshot.error is CryptoError) {
+    //         context.read<CryptoBloc>().add(GetLocalCrypto());
+    //       }
+    //       return Container();
+    //     }
+    //
+    //     if(!snapshot.hasData) {
+    //       context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
+    //       return CryptoLoader(styles: PortraitStyles(),);
+    //     }
+    //
+    //     final currencies = snapshot.data!;
+    //
+    //     if(currencies.isEmpty) {
+    //       context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
+    //     }
+    //     context.read<LocalDataBloc>().add(StoreCurrencies(currencies: currencies));
+    //
+    //     final items = currencies.values.map((crypto) {
+    //       if(crypto == null) {
+    //         return null;
+    //       }
+    //       if(chartData.containsKey(crypto.name)) {
+    //         chartData[crypto.name]!.add(GraphicPrice(
+    //             time: DateTime.now(), open: crypto.price, close: crypto.price));
+    //
+    //         // if(chartData.length == 20) {
+    //         //   chartData[crypto.name]!.removeAt(0);
+    //         //   _chartSeriesController[crypto.name]!.updateDataSource(
+    //         //     addedDataIndexes: <int>[chartData[crypto.name]!.length - 1],
+    //         //     removedDataIndexes: <int>[0],
+    //         //   );
+    //         // } else {
+    //         //   _chartSeriesController[crypto.name]?.updateDataSource(
+    //         //     addedDataIndexes: <int>[chartData.length - 1],
+    //         //   );
+    //         // }
+    //       } else {
+    //         chartData[crypto.name] = [GraphicPrice(time: DateTime.now(), open: crypto.price, close: crypto.price)];
+    //       }
+    //       if(!firstCryptoPrices.containsKey(crypto.name)) {
+    //         firstCryptoPrices[crypto.name] = crypto.price;
+    //       }
+    //       return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.internet);
+    //     }).toList();
+    //
+    //     return ValueListenableBuilder<Orientation>(
+    //       valueListenable: orientationUI,
+    //       builder: (_, orientation, __) {
+    //         final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
+    //
+    //         final styledItems = items.map<Widget>((e) {
+    //           if(e == null) {
+    //             return _cryptoWaiter();
+    //           }
+    //           return e(styles);
+    //         }).toList();
+    //         if (orientation == Orientation.portrait) {
+    //
+    //           return ValueListenableBuilder<bool>(
+    //               valueListenable: isEditingMode,
+    //               builder: (_, mode, __) {
+    //                 if(mode) {
+    //                   var wrap = ReorderableWrap(
+    //                     onReorder: (oldIdx, newIdx) {
+    //                       final pair = currencies.keys.toList()[oldIdx];
+    //                       context.read<CryptoBloc>().add(ReorderPair(newIdx: newIdx, pair: pair));
+    //                     },
+    //                     children: styledItems,
+    //                   );
+    //                   return SingleChildScrollView(child: wrap);
+    //                 }
+    //
+    //                 return SingleChildScrollView(
+    //                     child: Column(
+    //                         children: styledItems
+    //                     )
+    //                 );
+    //               });
+    //         }
+    //         if(orientation == Orientation.landscape) {
+    //           if(itemsLength != items.length) { // FIXED BUG line 110 pos 12: flutter: '_positions.isNotEmpty
+    //             itemsLength = items.length;
+    //             key = UniqueKey();
+    //           }
+    //           return SizedBox(
+    //               width: MediaQuery.of(context).size.width,
+    //               height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
+    //               child: Swiper(
+    //                 key: key,
+    //                 pagination: const SwiperPagination(
+    //                   alignment: Alignment.bottomCenter,
+    //                   builder: DotSwiperPaginationBuilder(
+    //                     color: Colors.grey,
+    //                   ),
+    //                 ),
+    //
+    //                 itemCount: items.length,
+    //                 itemBuilder: (BuildContext context, int index) => styledItems[index]
+    //               )
+    //           );
+    //         }
+    //         return Container();
+    //       }
+    //     );
+    //   }
+    // );
   }
 
   void _onDeletePair(String name, Modal_RequestType requestFrom,) {
@@ -606,41 +640,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required Crypto crypto}) {
-    print(styles is PortraitStyles);
+
     return ValueListenableBuilder<bool>(
       valueListenable: isEditingMode,
-      builder: (_, mode, __) => InkWell(
-        onTap: !mode ? () {
-          Navigator.push(context, MaterialPageRoute(
-              builder: (_) => BlocProvider(
+      builder: (_, mode, __) {
+        return InkWell(
+          onTap: !mode ? () {
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => BlocProvider(
                   create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
-                  child: CurrencyGraphic(crypto: crypto, streamController: cryptoController,),
-              )
-          ));
-        } : null,
+                  child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.type]!,),
+                )
+            ));
+          } : null,
 
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if(mode && styles is PortraitStyles) IconButton(onPressed: () => _onDeletePair(crypto.name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if(mode && styles is PortraitStyles) IconButton(onPressed: () => _onDeletePair(crypto.name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
 
-            Expanded(
-              child: CurrencyWidget(
-                percent: crypto.changePercent,
-                styles: styles,
-                currencyPrice: crypto.price,
-                currencyName: crypto.name,
-                deleteIcon:  styles is LandscapeStyles && mode,
-                onDeleteIconPress: () => _onDeletePair(crypto.name, requestFrom)
+              Expanded(
+                child: CurrencyWidget(
+                    isEditingMode: mode,
+                    oldPrice: previousCurrencies[crypto.name]!,
+                    percent: crypto.changePercent,
+                    styles: styles,
+                    currencyPrice: crypto.price,
+                    currencyName: crypto.name,
+                    deleteIcon:  styles is LandscapeStyles && mode,
+                    onDeleteIconPress: () => _onDeletePair(crypto.name, requestFrom)
+                ),
               ),
-            ),
 
-            if(mode && styles is PortraitStyles) IconButton(onPressed: null, icon: Icon(Icons.format_align_justify_outlined )),
+              if(mode && styles is PortraitStyles) IconButton(onPressed: null, icon: Icon(Icons.format_align_justify_outlined )),
 
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }
     );
   }
 

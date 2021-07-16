@@ -23,3 +23,10 @@ class GetGraphicPrice extends CurrenciesEvent {
   @override
   List<Object> get props => [ticker, interval, startDate];
 }
+
+class GetTickerDetails extends CurrenciesEvent {
+  final String tickerName;
+  GetTickerDetails({required this.tickerName});
+  @override
+  List<Object> get props => [tickerName];
+}

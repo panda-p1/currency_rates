@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:currencies_pages/bloc/crypto/states.dart';
 import 'package:currencies_pages/model/crypto.dart';
+import 'package:currencies_pages/model/graphic_price.dart';
 
 import '../constants.dart';
 import '../tools.dart';
@@ -22,7 +23,7 @@ Map<Currency_Pairs,List<Currency_Pairs>> currencyChains = {
   Currency_Pairs.eurusd: [Currency_Pairs.eurusd],
   Currency_Pairs.eurrub: [Currency_Pairs.eurrub],
   Currency_Pairs.usdrub: [Currency_Pairs.usdrub],
-  Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
+  // Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
   Currency_Pairs.ethusd: [Currency_Pairs.ethusd],
 };
 
@@ -33,7 +34,7 @@ Map<Currency_Pairs,List<Currency_Pairs>> reversedCurrencyChain = {
   Currency_Pairs.eurusd: [Currency_Pairs.btcusd, Currency_Pairs.btceur],
   Currency_Pairs.eurrub: [Currency_Pairs.btceur, Currency_Pairs.btcrub],
   Currency_Pairs.usdrub: [Currency_Pairs.btcusd, Currency_Pairs.btcrub],
-  Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
+  // Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
   Currency_Pairs.ethusd: [Currency_Pairs.ethusd],
 };
 
@@ -41,9 +42,11 @@ Map<Currency_Pairs, String> pairsUrls = {
   Currency_Pairs.btcusd: BTCUSDURL,
   Currency_Pairs.btceur: BTCEURURL,
   Currency_Pairs.btcrub: BTCRUBURL,
-  Currency_Pairs.dogeusd: DOGEUSDURL,
+  // Currency_Pairs.dogeusd: DOGEUSDURL,
   Currency_Pairs.ethusd: ETHUSDURL,
 };
+
+
 
 class NotificationController {
   var btcrub = '';
@@ -63,7 +66,8 @@ class NotificationController {
   }
 
   List<Currency_Pairs> pairs = [];
-  StreamController<Map<Currency_Pairs, Crypto?>> streamController = StreamController.broadcast(sync: true);
+  Map<Currency_Pairs, StreamController<Crypto?>> streamControllers = {};
+
   late Map<Currency_Pairs, Crypto?> obj;
 
   Map<Currency_Pairs, WebSocket> channels = {};
@@ -81,7 +85,6 @@ class NotificationController {
 
     final Map<Currency_Pairs, Crypto?> newObj = {};
     newObj.addEntries(list);
-    print(newObj);
     obj = {...newObj};
   }
 
@@ -99,6 +102,10 @@ class NotificationController {
     }
   }
 
+  addStreamCtrl(Currency_Pairs pair) {
+    streamControllers[pair] =  StreamController.broadcast(sync: true);
+  }
+
   closeAllConnections() {
     for(var i = 0; i < channels.length; i++) {
       channels.values.toList()[i].close();
@@ -111,6 +118,7 @@ class NotificationController {
     _addToBeginningOfObj(pair);
     for(var channelName in requiredToStartListenPairs) {
       if(!channels.keys.contains(channelName)) {
+        addStreamCtrl(pair);
         channels.addEntries([MapEntry(channelName, await connectWs(MapEntry(channelName, pairsUrls[channelName]!)))]);
         _addListener(channelName);
       }
@@ -123,7 +131,7 @@ class NotificationController {
   _onDoneChannel(Currency_Pairs pair) {
     if(channels[pair] != null) {
       if(channels[pair]!.closeCode == 1002) {
-        streamController.addError(CryptoError());
+        // streamController.addError(CryptoError());
       }
     }
 
@@ -137,17 +145,19 @@ class NotificationController {
     if(!pairsUrls.containsKey(pair)) {
       throw Exception('pairsUrls does not contain this pair');
     }
-    if(pair == Currency_Pairs.dogeusd || pair == Currency_Pairs.ethusd) {
+    if(
+    // pair == Currency_Pairs.dogeusd ||
+        pair == Currency_Pairs.ethusd) {
       channels[pair]!.listen((streamData) {
         final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
         obj[crypto.type] = crypto;
-        streamController.add(obj);
+        streamControllers[pair]!.add(crypto);
+        // streamController.add(obj);
       }).onDone(() => _onDoneChannel(pair));
       return;
     }
 
     channels[pair]!.listen((streamData) {
-      print(streamData);
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       if(crypto.type == Currency_Pairs.btcusd) btcusd = crypto.price;
       if(crypto.type == Currency_Pairs.btceur) btceur = crypto.price;
@@ -156,6 +166,8 @@ class NotificationController {
       if(pairs.contains(crypto.type)) {
         obj[crypto.type] = crypto;
       }
+
+      streamControllers[pair]!.add(crypto);
 
       // if(pairs.contains(Currency_Pairs.eurrub) &&
       //     btcrub.isNotEmpty && btceur.isNotEmpty
@@ -182,12 +194,14 @@ class NotificationController {
       //       price: Utils.makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
       //       type: Currency_Pairs.usdrub);
       // }
-      streamController.add(obj);
+      // streamController.add(obj);
       return;
     }).onDone(() => _onDoneChannel(pair));
   }
   _initPairs(List<Currency_Pairs> pairss) async {
     pairs.addAll(pairss.reversed);
+    pairs.forEach((element) {addStreamCtrl(element);});
+
     final Map<Currency_Pairs, String> channelPairs = Map.from(pairsUrls)..removeWhere((k, v) => !pairss.contains(k));
     final websockets = await _initConnectWs(channelPairs);
     channels = {for(var i in List.generate(websockets.length, (index) => index)) channelPairs.keys.toList()[i]: websockets[i]};
@@ -198,6 +212,7 @@ class NotificationController {
   initWebSocketConnection() async {
     print("connecting...");
     final chosenPairs = await LocalDataProvider().getChosenPairs();
+    print(chosenPairs);
     obj = {for (var pair in chosenPairs) pair: null};
     await _initPairs(chosenPairs);
   }

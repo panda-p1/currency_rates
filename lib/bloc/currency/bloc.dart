@@ -13,6 +13,16 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
 
   @override
   Stream<CurrenciesState> mapEventToState(CurrenciesEvent event,) async* {
+    if(event is GetTickerDetails) {
+      try {
+        yield CurrencyDetailsLoading();
+        final details = await currencyRepo.getDetailTickerInfo(event.tickerName);
+        print('details received');
+        yield CurrencyDetails(details: details);
+      } catch(e) {
+        print(e);
+      }
+    }
     if(event is GetGraphicPrice) {
       try {
         yield CurrenciesLoading();
@@ -45,7 +55,6 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
         try {
           print('SocketException rest');
           final currencies = await LocalDataProvider().getBinanceRestapiCurrencies();
-          print(currencies);
           yield LocalCurrenciesLoaded(currencies: currencies);
         } catch (e) {
           print(e);

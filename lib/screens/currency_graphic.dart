@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:currencies_pages/bloc/crypto/bloc.dart';
+import 'package:currencies_pages/bloc/crypto/events.dart';
+import 'package:currencies_pages/bloc/crypto/states.dart';
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 import 'package:currencies_pages/bloc/currency/events.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/model/graphic_price.dart';
 import 'package:currencies_pages/model/crypto.dart';
+import 'package:currencies_pages/model/ticker_details.dart';
 import 'package:currencies_pages/widgets/horizontal_currency.dart';
 import 'package:currencies_pages/widgets/interval_button.dart';
 
@@ -12,6 +16,8 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 import '../constants.dart';
 import '../styles.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
@@ -36,7 +42,7 @@ Map<String, SDI> INTERVAL_DATE = {
 
 class CurrencyGraphic extends StatefulWidget {
   final Crypto crypto;
-  final StreamController<Map<Currency_Pairs, Crypto?>>? streamController;
+  final StreamController<Crypto?>? streamController;
   CurrencyGraphic({Key? key, required this.crypto, required this.streamController}) : super(key: key);
 
   @override
@@ -46,14 +52,16 @@ class CurrencyGraphic extends StatefulWidget {
 class _CurrencyGraphicState extends State<CurrencyGraphic> {
   int pressedBtnIdx = 0;
 
-  List<GraphicPrice> prices = [];
-
   @override
   void initState() {
-    getGraphicPrice();
+    _getGraphicPrice();
+    _getTickerDetails();
     super.initState();
   }
-  void getGraphicPrice() {
+  void _getTickerDetails() {
+    context.read<CurrenciesBloc>().add(GetTickerDetails(tickerName: widget.crypto.queryName));
+  }
+  void _getGraphicPrice() {
     final SDI = INTERVAL_DATE.values.toList()[pressedBtnIdx];
     context.read<CurrenciesBloc>().add(GetGraphicPrice(
         ticker: widget.crypto.queryName,
@@ -93,13 +101,13 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
 
           child: widget.streamController != null
               ?
-            StreamBuilder<Map<Currency_Pairs, Crypto?>>(
+            StreamBuilder<Crypto?>(
                 stream: widget.streamController!.stream,
                 builder: (_, snapshot) {
                   if(!snapshot.hasData) {
                     return Container();
                   }
-                  final crypto = snapshot.data![widget.crypto.type];
+                  final crypto = snapshot.data!;
                   if(crypto == null) {
                     return Container();
                   }
@@ -119,7 +127,7 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
       setState(() {
         pressedBtnIdx = INTERVAL_DATE.keys.toList().indexOf(btnText);
       });
-      getGraphicPrice();
+      _getGraphicPrice();
     }
   }
   Widget _rowButtons() {
@@ -136,11 +144,79 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
       ),
     );
   }
-  Widget _bodyUI() {
-    return BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
-      if(state is GraphicPriceLoaded) {
 
-        return _graphic(state.prices);
+  Widget _bodyUI() {
+    return Column(
+      children: [
+        _graphic(),
+        _details()
+      ],
+    );
+  }
+  Widget _details() {
+    return BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
+      if(state is CurrencyDetails) {
+        return _detailsUI(state.details);
+      }
+
+      if(state is CurrenciesError) {
+        return Container(
+            child: Text(
+              'error',
+              style: TextStyle(color: Colors.red),
+            )
+        );
+      }
+      return Container();
+    }, buildWhen: (state1, state2) => state2 is CurrencyDetailsLoading || state2 is CurrencyDetails,);
+  }
+
+  Widget _detailsUnit(String text, String price) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4.0, bottom: 4),
+      child: Row(
+        children: [
+          Text(text, style: TextStyle(fontSize: 15, color: Colors.grey[600]),),
+          Spacer(),
+          Text(_format(price), style: TextStyle(fontSize: 15))
+        ],
+      ),
+    );
+  }
+
+  Widget _detailsUI(TickerDetails details) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.9,
+
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                _detailsUnit('Open', details.openPrice),
+                _detailsUnit('High', details.highPrice),
+                _detailsUnit('Low', details.lowPrice),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detailsUnit('Vol', details.volume)
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _graphic() {
+    return BlocBuilder<CurrenciesBloc, CurrenciesState>(builder: (BuildContext context, CurrenciesState state) {
+      print(state);
+      if(state is GraphicPriceLoaded) {
+        return _graphicUI(state.prices);
       }
       if(state is CurrenciesLoading) {
         return _loader();
@@ -148,14 +224,15 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
       if(state is CurrenciesError) {
         return Container(
             child: Text(
-              state.message,
+              'error',
               style: TextStyle(color: Colors.red),
             )
         );
       }
       return Container();
-    });
+    }, buildWhen: (state1, state2) => state2 is! CurrencyDetailsLoading && state2 is! CurrencyDetails,);
   }
+
   SizedBox _sized({required Widget child}) {
     return SizedBox(
         height: MediaQuery.of(context).size.height / 2.5,
@@ -170,41 +247,21 @@ class _CurrencyGraphicState extends State<CurrencyGraphic> {
     );
   }
 
-  Widget _graphic(List<GraphicPrice> prices) {
+  Widget _graphicUI(List<GraphicPrice> priceList) {
     return _sized(
-      child: charts.TimeSeriesChart(
-
-        [
-          charts.Series<GraphicPrice, DateTime>(
-            id: widget.crypto.queryName,
-            colorFn: (_, __) => charts.ColorUtil.fromDartColor(Theme.of(context).textTheme.bodyText1!.color!),
-            domainFn: (GraphicPrice sales, _) => sales.time,
-            measureFn: (GraphicPrice sales, _) => num.parse(sales.price),
-            data: prices,
+      child: SfCartesianChart(
+        primaryXAxis: DateTimeAxis(),
+        series: [
+          LineSeries<GraphicPrice, DateTime>(
+              dataSource: priceList,
+              xValueMapper: (GraphicPrice sales, _) => sales.time,
+              yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
           ),
         ],
-        domainAxis: charts.DateTimeAxisSpec(
-          renderSpec: charts.GridlineRendererSpec(
-              labelStyle: charts.TextStyleSpec(
-                fontSize: 10,
-                color: charts.ColorUtil.fromDartColor(Theme.of(context).textTheme.bodyText1!.color!),
-              ),
-
-          ),
-        ),
-        primaryMeasureAxis: charts.NumericAxisSpec(
-          tickProviderSpec: charts.BasicNumericTickProviderSpec(zeroBound: false),
-          renderSpec: charts.GridlineRendererSpec(
-            labelStyle: charts.TextStyleSpec(
-              fontSize: 10,
-              color: charts.ColorUtil.fromDartColor(Theme.of(context).textTheme.bodyText1!.color!),
-            ),
-            // lineStyle: charts.LineStyleSpec(
-            //   color: charts.MaterialPalette.gray.shadeDefault,
-            // )
-          ),
-        ),
       ),
     );
   }
+}
+String _format(String price) {
+  return NumberFormat.currency(locale: 'eu', symbol: '').format(double.parse(price));
 }
