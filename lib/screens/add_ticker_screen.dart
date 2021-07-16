@@ -144,6 +144,8 @@ import 'package:connectivity/connectivity.dart';
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 import 'package:currencies_pages/bloc/currency/events.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
+import 'package:currencies_pages/bloc/localData/bloc.dart';
+import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:currencies_pages/widgets/add_ticker_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -236,13 +238,13 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
             print(state);
             if(state is CurrenciesLoaded) {
               if(pairsAdded.isEmpty) {
-                pairsAdded = {for (var currency in state.currencies.currencies) currency.type: false};
+                pairsAdded = {for (var currency in state.currencies.currencies) (currency.baseAsset + currency.quoteAsset): false};
               }
               return _bodyUI(currencies: state.currencies);
             }
             if(state is LocalCurrenciesLoaded) {
               if(pairsAdded.isEmpty) {
-                pairsAdded = {for (var currency in state.currencies.currencies) currency.type: false};
+                pairsAdded = {for (var currency in state.currencies.currencies) (currency.baseAsset + currency.quoteAsset): false};
               }
 
               return _bodyUI(currencies: state.currencies);
@@ -330,12 +332,12 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
                 Container(
                   decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      color: buttonColor != null ? buttonColor : !pairsAdded[pair.type]! ? Colors.blue : Colors.red
+                      color: buttonColor != null ? buttonColor : !pairsAdded[ (pair.baseAsset + pair.quoteAsset)]! ? Colors.blue : Colors.red
                   ),
                   child: Center(
                     child: TextButton(
-                      onPressed: () => connected ? _onPairClick(pair.type) : null,
-                      child: !pairsAdded[pair.type]! ? _styledTextButton('Add') : _styledTextButton('undo'),
+                      onPressed: () => connected ? _onPairClick(pair.baseAsset + pair.quoteAsset) : null,
+                      child: !pairsAdded[(pair.baseAsset + pair.quoteAsset)]! ? _styledTextButton('Add') : _styledTextButton('undo'),
                     ),
                   ),
                 )
@@ -348,10 +350,11 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
   }
 
   _onPairClick(String pair) {
+    print('on pair click');
     if(!pairsAdded[pair]!) { // if it false btn was pressed
-      // context.read<LocalDataBloc>().add(AddPair(pair: pair));
+      context.read<LocalDataBloc>().add(AddPair(pair: pair));
     } else {
-      // context.read<LocalDataBloc>().add(RemovePair(pair: pair));
+      context.read<LocalDataBloc>().add(RemovePair(pair: pair));
     }
     setState(() {
       pairsAdded[pair] = !pairsAdded[pair]!;

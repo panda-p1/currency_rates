@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   bool _isInForeground = true;
 
-  Map<Currency_Pairs, StreamController<Crypto?>> cryptoController = {};
+  Map<String, StreamController<Crypto?>> cryptoController = {};
 
   Timer? retryConnectionTimer;
 
@@ -137,16 +137,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   }
                 },
               ),
-              // ValueListenableBuilder<bool>(
-              //     valueListenable: isEditingMode,
-              //     builder: (_, mode,__) {
-              //       return TextButton(
-              //         onPressed: () {
-              //           // isEditingMode.value = !mode;
-              //           },
-              //         child: Text(mode ? 'Done' : 'Edit', style: TextStyle(color: Colors.blue[400]),),
-              //       );
-              //     }),
+              ValueListenableBuilder<bool>(
+                  valueListenable: isEditingMode,
+                  builder: (_, mode,__) {
+                    return TextButton(
+                      onPressed: () {
+                        isEditingMode.value = !mode;
+                        },
+                      child: Text(mode ? 'Done' : 'Edit', style: TextStyle(color: Colors.blue[400]),),
+                    );
+                  }),
             ],
           ),
         ),
@@ -406,7 +406,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     MultiBlocProvider(
                       providers: [
                         BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
-                        BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
+                        BlocProvider.value(
+                          value: BlocProvider.of<LocalDataBloc>(context),
+                          child: ConfigScreen(),
+                        )
+                        // BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
                       ],
                       child: AddTickerScreen(),)
                 ));
@@ -430,19 +434,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     };
   }
 
-  Future<bool> _showConfirmDialog(List<Currency_Pairs> confirmationDetails, Modal_RequestType requestFrom) async {
+  Future<bool> _showConfirmDialog(String confirmationDetails, Modal_RequestType requestFrom) async {
     controller.stop();
     final d = confirmationDetails;
     await showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext alertContext) {
-        final getName = CryptoFromBackendHelper.getNameByCurrencyType;
         return AlertDialog(
           title: Text(d.length > 1 ? 'Warning' : 'Confirmation'),
           content: Text(
               d.length > 1
-                  ? 'Are you sure want to delete ${getName(d[0])} pair? This pairs will be deleted too: ${d.skip(1).map((e) => getName(e))}'
+                  ? 'Are you sure want to delete $d pair?'
                   : 'Are you sure want to delete this pair?'),
           actions: <Widget>[
             TextButton(
@@ -457,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               child: const Text('confirm'),
               onPressed: () {
                 Navigator.pop(alertContext);
-                context.read<CryptoBloc>().add(ConfirmedRemovePair(pairs: d, requestFrom: requestFrom));
+                context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: d, requestFrom: requestFrom));
                 controller.forward();
               },
             ),
@@ -478,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  Widget _cryptoLoaded(Map<Currency_Pairs, StreamController<Crypto?>> streamControllers) {
+  Widget _cryptoLoaded(Map<String, StreamController<Crypto?>> streamControllers) {
 
     // marker
     cryptoController = streamControllers;
@@ -486,6 +489,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       return StreamBuilder<Crypto?>(
           stream: e.stream,
           builder: (_, snapshot) {
+            if(snapshot.hasError) {
+              if(snapshot.error is ClosedCrypto) {
+                return Container();
+              }
+            }
             if(!snapshot.hasData) {
               return CryptoLoader(styles: PortraitStyles(),);
             }
@@ -639,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   void _onDeletePair(String name, Modal_RequestType requestFrom,) {
-      context.read<CryptoBloc>().add(CryptoRemovePair(pair: CryptoFromBackendHelper.getCurrencyTypeByName(name), requestFrom: requestFrom));
+      context.read<CryptoBloc>().add(CryptoRemovePair(pair: name, requestFrom: requestFrom));
   }
 
   Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required Crypto crypto}) {
@@ -652,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             Navigator.push(context, MaterialPageRoute(
                 builder: (_) => BlocProvider(
                   create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
-                  child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.type]!,),
+                  child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.name]!,),
                 )
             ));
           } : null,
@@ -675,8 +683,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 ),
               ),
 
-              if(mode && styles is PortraitStyles) IconButton(onPressed: null, icon: Icon(Icons.format_align_justify_outlined )),
-
             ],
           ),
         );
@@ -697,7 +703,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  Widget _localCryptoLoaded(Map<Currency_Pairs, Crypto?> currencies) {
+  Widget _localCryptoLoaded(Map<String, Crypto?> currencies) {
     final items = currencies.values.map((crypto) {
       if(crypto == null) {
         return null;

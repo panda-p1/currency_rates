@@ -51,46 +51,47 @@ class Utils {
 }
 
 class CryptoFromBackendHelper {
-  static Map<Currency_Pairs, String> _nameByCurrencyType = {
-    Currency_Pairs.btcusd: 'BTC-USD',
-    Currency_Pairs.ethusd: 'ETH-USD',
-    // Currency_Pairs.dogeusd: 'DOGE-USD',
-    Currency_Pairs.btcrub: 'BTC-RUB',
-    Currency_Pairs.btceur: 'BTC-EUR',
-    Currency_Pairs.usdrub: 'USD-RUB',
-    Currency_Pairs.eurusd: 'EUR-USD',
-    Currency_Pairs.eurrub: 'EUR-RUB',
-  };
-  static Currency_Pairs _getCurrencyType(Map<String, dynamic> crypto) {
-    var stringType = crypto['s'].toLowerCase();
-
-    if(stringType.endsWith('t')) {
-      List<String> c = stringType.split("");
-      c.removeLast();
-      stringType = c.join();
-    }
-    return Utils.stringCurPairsToEnum(stringType);
-  }
+  // static Map<Currency_Pairs, String> _nameByCurrencyType = {
+  //   Currency_Pairs.btcusd: 'BTC-USD',
+  //   Currency_Pairs.ethusd: 'ETH-USD',
+  //   // Currency_Pairs.dogeusd: 'DOGE-USD',
+  //   Currency_Pairs.btcrub: 'BTC-RUB',
+  //   Currency_Pairs.btceur: 'BTC-EUR',
+  //   Currency_Pairs.usdrub: 'USD-RUB',
+  //   Currency_Pairs.eurusd: 'EUR-USD',
+  //   Currency_Pairs.eurrub: 'EUR-RUB',
+  // };
+  // static Currency_Pairs _getCurrencyType(Map<String, dynamic> crypto) {
+  //   var stringType = crypto['s'].toLowerCase();
+  //
+  //   if(stringType.endsWith('t')) {
+  //     List<String> c = stringType.split("");
+  //     c.removeLast();
+  //     stringType = c.join();
+  //   }
+  //   return Utils.stringCurPairsToEnum(stringType);
+  // }
   static String _getPrice(Map<String, dynamic> crypto) {
     var price = ((double.parse(crypto['b'].toString()) + double.parse(crypto['a'].toString())) / 2);
     return Utils.makeShortPrice(price);
   }
-  static String getNameByCurrencyType(Currency_Pairs type) {
-    return _nameByCurrencyType[type]!;
-  }
-  static String _getName(Map<String, dynamic> crypto) {
-    return getNameByCurrencyType(_getCurrencyType(crypto));
-  }
-  static Currency_Pairs getCurrencyTypeByName(String name) {
-    return _nameByCurrencyType.keys.firstWhere((element) => _nameByCurrencyType[element] == name);
-  }
+  // static String getNameByCurrencyType(Currency_Pairs type) {
+  //   return _nameByCurrencyType[type]!;
+  // }
+  // static String _getName(Map<String, dynamic> crypto) {
+  //   return getNameByCurrencyType(_getCurrencyType(crypto));
+  // }
+  // static Currency_Pairs getCurrencyTypeByName(String name) {
+  //   return _nameByCurrencyType.keys.firstWhere((element) => _nameByCurrencyType[element] == name);
+  // }
   static Crypto createCrypto(Map<String, dynamic> crypto) {
     var price = _getPrice(crypto);
-    var type = _getCurrencyType(crypto);
-    var name = _getName(crypto);
+    // var type = _getCurrencyType(crypto);
+    // var name = _getName(crypto);
+    var name = crypto['s'];
     var percentage = crypto['P'].toString();
     var queryName = crypto['s'];
-    return Crypto(name: name, price: price, type: type, queryName: queryName, changePercent: percentage);
+    return Crypto(name: name, price: price, queryName: queryName, changePercent: percentage);
   }
 }
 

@@ -38,7 +38,7 @@ class GetDelay extends LocalDataEvent {
 // }
 
 class StoreCurrencies extends LocalDataEvent {
-  final Map<Currency_Pairs, Crypto?> currencies;
+  final Map<String, Crypto?> currencies;
   StoreCurrencies({required this.currencies});
   @override
   List<Object> get props => [currencies];
@@ -68,14 +68,14 @@ class GetAvailableToAddPairs extends LocalDataEvent {
 }
 
 class AddPair extends LocalDataEvent {
-  final Currency_Pairs pair;
+  final String pair;
   AddPair({required this.pair});
   @override
   List<Object> get props => [pair];
 }
 
 class RemovePair extends LocalDataEvent {
-  final Currency_Pairs pair;
+  final String pair;
   RemovePair({required this.pair});
   @override
   List<Object> get props => [pair];

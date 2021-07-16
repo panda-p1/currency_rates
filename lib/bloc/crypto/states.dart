@@ -30,24 +30,28 @@ class CryptoError extends CryptoState {
 }
 
 class CryptoLoaded extends CryptoState {
-  final Map<Currency_Pairs, StreamController<Crypto?>> streamControllers;
+  final Map<String, StreamController<Crypto?>> streamControllers;
   CryptoLoaded({required this.streamControllers});
   @override
   List<Object> get props => [streamControllers];
 }
 class CryptoModal extends CryptoState {
-  final List<Currency_Pairs> confirmationDetails;
+  final String confirmationDetails;
   final Modal_RequestType requestFrom;
   CryptoModal({required this.confirmationDetails, required this.requestFrom});
   @override
   List<Object> get props => [confirmationDetails, requestFrom];
+}
+class ClosedCrypto extends CryptoState {
+  @override
+  List<Object> get props => [];
 }
 class CryptoEmptyState extends CryptoState { // created to change modal state
   @override
   List<Object> get props => [];
 }
 class LocalCryptoLoaded extends CryptoState {
-  final Map<Currency_Pairs, Crypto?> currencies;
+  final Map<String, Crypto?> currencies;
   LocalCryptoLoaded({required this.currencies});
   @override
   List<Object> get props => [currencies];

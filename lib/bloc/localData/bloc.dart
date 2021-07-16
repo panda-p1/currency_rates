@@ -21,9 +21,11 @@ class LocalDataBloc extends Bloc<LocalDataEvent, LocalDataState> {
   @override
   mapEventToState(event) async* {
     if(event is RemovePair) {
-      NotificationController.getInstance().confirmedCloseConnection([event.pair]);
+      NotificationController.getInstance().confirmedCloseConnection(event.pair);
+      // localDataRepo.removePair(event.pair);
     }
     if(event is AddPair) {
+      print('add pair event localdata bloc');
       NotificationController.getInstance().addPair(event.pair);
       await localDataRepo.addPair(event.pair);
     }

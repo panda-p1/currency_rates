@@ -17,12 +17,12 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   Stream<CryptoState> mapEventToState(event) async* {
     print(event);
     if(event is ReorderPair) {
-      notifCtrl.reorderPair(event.newIdx, event.pair);
+      // notifCtrl.reorderPair(event.newIdx, event.pair);
     }
     if(event is LocalReorderPair) {
       await localDataProvider.reorderPairs(event.newIdx, event.pair);
       final reorderedCurrencies = await localDataProvider.getLocalCurrencies();
-      yield LocalCryptoLoaded(currencies: reorderedCurrencies);
+      // yield LocalCryptoLoaded(currencies: reorderedCurrencies);
     }
     if(event is CheckIfObjIsEmpty) {
       final isEmpty = notifCtrl.isEmpty();
@@ -54,14 +54,8 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       }
     }
     if(event is CryptoRemovePair) {
-      List<Currency_Pairs>? pairs;
-      if(event.requestFrom == Modal_RequestType.internet) {
-        pairs = notifCtrl.showConnections(event.pair);
-      }
-      if(event.requestFrom == Modal_RequestType.local) {
-        pairs = [event.pair];
-      }
-      yield CryptoModal(confirmationDetails: pairs!, requestFrom: event.requestFrom);
+
+      yield CryptoModal(confirmationDetails: event.pair, requestFrom: event.requestFrom);
     }
     if(event is NotConfirmedRemovePair) {
       yield CryptoEmptyState();
@@ -69,21 +63,15 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     if(event is ConfirmedRemovePair) {
       yield CryptoEmptyState();
 
-      final pairs = event.pairs;
+      final pair = event.pair;
+      localDataProvider.removePair(pair);
 
       if(event.requestFrom == Modal_RequestType.internet) {
-        for(var pair in pairs) {
-          await localDataProvider.removePair(pair);
-        }
-
-        await notifCtrl.confirmedCloseConnection(pairs);
+        await notifCtrl.confirmedCloseConnection(pair);
         final controller = notifCtrl.streamControllers;
         yield CryptoLoaded(streamControllers: controller);
       }
       if(event.requestFrom == Modal_RequestType.local) {
-        for(var pair in pairs) {
-          await localDataProvider.removePair(pair);
-        }
         final currencies = await localDataProvider.getLocalCurrencies();
         yield LocalCryptoLoaded(currencies: currencies);
       }
