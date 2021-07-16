@@ -412,7 +412,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 ));
                 context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
               },
-               child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
+               child: Padding(
+                 padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 8 : 36),
+                 child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
+               ),
             )
           ],
         ),

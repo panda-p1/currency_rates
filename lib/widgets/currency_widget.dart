@@ -80,43 +80,45 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       prevYmin = yMin;
     }
 
-    return SizedBox(
-      height: widget.styles.currencyWidgetHeight() + 1,
-      width: 100,
-      child: SfCartesianChart(
-          plotAreaBorderWidth: 0,
-          primaryXAxis: DateTimeAxis(
-              maximum: DateTime.now() ,
-              minimum: DateTime.now().subtract(Duration(minutes: 1)),
-              isVisible: false
-          ),
-          primaryYAxis: NumericAxis(
-              maximum: prevYmax! + prevYmax! * 0.000001,
-              minimum: prevYmin! - prevYmin! * 0.000001,
-              // autoScrollingMode: AutoScrollingMode.end,
-              // anchorRangeToVisiblePoints: true,
-              // rangePadding: ChartRangePadding.none,
-              isVisible: false,
-          ),
-          series: <LineSeries<GraphicPrice, DateTime>>[
-            LineSeries<GraphicPrice, DateTime>(
-              dataSource: dashedLine,
-              dashArray: <double>[3.5,3.5],
-              color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
-              xValueMapper: (GraphicPrice sales, _) => sales.time,
-              yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+    return Center(
+      child: SizedBox(
+        height: widget.styles.currencyWidgetHeight() + 1,
+        width: 100,
+        child: SfCartesianChart(
+            plotAreaBorderWidth: 0,
+            primaryXAxis: DateTimeAxis(
+                maximum: DateTime.now() ,
+                minimum: DateTime.now().subtract(Duration(minutes: 1)),
+                isVisible: false
+            ),
+            primaryYAxis: NumericAxis(
+                maximum: prevYmax! + prevYmax! * 0.000001,
+                minimum: prevYmin! - prevYmin! * 0.000001,
+                // autoScrollingMode: AutoScrollingMode.end,
+                // anchorRangeToVisiblePoints: true,
+                // rangePadding: ChartRangePadding.none,
+                isVisible: false,
+            ),
+            series: <LineSeries<GraphicPrice, DateTime>>[
+              LineSeries<GraphicPrice, DateTime>(
+                dataSource: dashedLine,
+                dashArray: <double>[3.5,3.5],
+                color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+                xValueMapper: (GraphicPrice sales, _) => sales.time,
+                yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+                  animationDuration: 0
+
+              ),
+              LineSeries<GraphicPrice, DateTime>(
+                dataSource: chartData,
+                color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+                xValueMapper: (GraphicPrice sales, _) => sales.time,
+                yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
                 animationDuration: 0
+              ),
 
-            ),
-            LineSeries<GraphicPrice, DateTime>(
-              dataSource: chartData,
-              color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
-              xValueMapper: (GraphicPrice sales, _) => sales.time,
-              yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
-              animationDuration: 0
-            ),
-
-          ]),
+            ]),
+      ),
     );
   }
 
