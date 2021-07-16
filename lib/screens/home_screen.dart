@@ -662,7 +662,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
               Expanded(
                 child: CurrencyWidget(
-                    isEditingMode: mode,
                     oldPrice: previousCurrencies[crypto.name]!,
                     percent: crypto.changePercent,
                     styles: styles,

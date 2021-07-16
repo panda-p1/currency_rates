@@ -16,9 +16,7 @@ class CurrencyWidget extends StatefulWidget {
   final String? oldPrice;
   final Function? onDeleteIconPress;
   final String? percent;
-  final bool isEditingMode;
   CurrencyWidget({Key? key,
-    required this.isEditingMode,
     this.oldPrice,
     this.deleteIcon, this.onDeleteIconPress,
     this.currencyName, this.percent,
@@ -45,6 +43,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     for(var i = 0; i < 21; i++) {
       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
     }
+    chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
+
     super.initState();
   }
   @override
@@ -62,9 +62,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       }
       if(chartData.length == 70) {
         chartData.removeAt(0);
-      } else {
-        
-      }
+      } else {}
     }
 
     super.didUpdateWidget(oldWidget);
@@ -161,7 +159,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0),
+            padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -169,7 +167,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
                 _currencyName(),
                 Spacer(),
                 _buildLiveLineChart(),
-                if(!widget.isEditingMode) _currencyPrice(),
+                _currencyPrice(),
               ],
             ),
           ),
