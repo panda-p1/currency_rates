@@ -367,6 +367,7 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
     } else {
       context.read<LocalDataBloc>().add(RemovePair(pair: pair));
     }
+    Navigator.pop(context);
     setState(() {
       pairsAdded[pair] = !pairsAdded[pair]!;
     });

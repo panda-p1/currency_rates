@@ -88,7 +88,6 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
         height: widget.styles.currencyWidgetHeight() + 1,
         width: 100,
           child: SfCartesianChart(
-
             onChartTouchInteractionUp: (d) {
               widget.onGraphicPressed!();
             },

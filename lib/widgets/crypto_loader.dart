@@ -24,25 +24,29 @@ class _CryptoLoaderState extends State<CryptoLoader> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-        if(widget.isEditingMode)
-          IconButton(
-              onPressed: () => widget.onDeletePress(widget.cryptoName),
-              icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+    return Padding(
+      padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
+
+      child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
           if(widget.isEditingMode)
+            IconButton(
+                onPressed: () => widget.onDeletePress(widget.cryptoName),
+                icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
 
-            Center(child: Text(widget.cryptoName,
-            style: TextStyle(
-              fontSize: widget.styles.currencyNameFontSize(),
-              color: widget.styles.currencyNameFontColor()))
-            ),
-          if(!widget.isEditingMode)
-            Loader(styles: widget.styles,)
-        ],
+          Text(widget.cryptoName,
+              style: TextStyle(
+                fontSize: widget.styles.currencyNameFontSize(),
+                color: widget.styles.currencyNameFontColor()
+              )
+          ),
+          Spacer(),
+          Loader(styles: widget.styles,)
+          ],
 
+      ),
     );
   }
 

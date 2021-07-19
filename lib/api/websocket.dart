@@ -116,6 +116,7 @@ class NotificationController {
   _addToBeginningOfObj(String pair) {
     obj = {...{pair: null},...obj};
   }
+
   _onDoneChannel(String pair) {
     streamControllers[pair]!.addError(ClosedCrypto());
 
