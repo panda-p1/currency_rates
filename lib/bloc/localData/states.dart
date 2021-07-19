@@ -15,9 +15,9 @@ class LocalDataInitState extends LocalDataState {
   List<Object> get props => [];
 }
 
-class AvailableToAddPairs extends LocalDataState {
-  final List<Currency_Pairs> pairs;
-  AvailableToAddPairs({required this.pairs});
+class GetChosenPairsState extends LocalDataState {
+  final List<String> pairs;
+  GetChosenPairsState({required this.pairs});
   @override
   List<Object> get props => [pairs];
 }

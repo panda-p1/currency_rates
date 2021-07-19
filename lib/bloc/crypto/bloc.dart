@@ -55,7 +55,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     }
     if(event is CryptoRemovePair) {
 
-      yield CryptoModal(confirmationDetails: event.pair, requestFrom: event.requestFrom);
+      yield CryptoModal(confirmationDetails: event.pair);
     }
     if(event is NotConfirmedRemovePair) {
       yield CryptoEmptyState();
@@ -66,15 +66,15 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       final pair = event.pair;
       localDataProvider.removePair(pair);
 
-      if(event.requestFrom == Modal_RequestType.internet) {
+      // if(event.requestFrom == Modal_RequestType.internet) {
         await notifCtrl.confirmedCloseConnection(pair);
         final controller = notifCtrl.streamControllers;
         yield CryptoLoaded(streamControllers: controller);
-      }
-      if(event.requestFrom == Modal_RequestType.local) {
-        final currencies = await localDataProvider.getLocalCurrencies();
-        yield LocalCryptoLoaded(currencies: currencies);
-      }
+      // }
+      // if(event.requestFrom == Modal_RequestType.local) {
+      //   final currencies = await localDataProvider.getLocalCurrencies();
+      //   yield LocalCryptoLoaded(currencies: currencies);
+      // }
     }
     if(event is GetLocalCrypto) {
       final currencies = await localDataProvider.getLocalCurrencies();

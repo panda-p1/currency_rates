@@ -25,10 +25,9 @@ class CryptoCloseAllConnections extends CryptoEvent {
 
 class CryptoRemovePair extends CryptoEvent {
   final String pair;
-  final Modal_RequestType requestFrom;
-  CryptoRemovePair({required this.pair,required this.requestFrom});
+  CryptoRemovePair({required this.pair});
   @override
-  List<Object> get props => [pair, requestFrom];
+  List<Object> get props => [pair];
 }
 
 class LocalNotConfirmedRemovePair extends CryptoEvent {
@@ -42,10 +41,9 @@ class NotConfirmedRemovePair extends CryptoEvent {
 
 class ConfirmedRemovePair extends CryptoEvent {
   final String pair;
-  final Modal_RequestType requestFrom;
-  ConfirmedRemovePair({required this.pair, required this.requestFrom});
+  ConfirmedRemovePair({required this.pair});
   @override
-  List<Object> get props => [pair, requestFrom];
+  List<Object> get props => [pair];
 }
 class ConfirmedLocalRemovePair extends CryptoEvent {
   final List<Currency_Pairs> pairs;

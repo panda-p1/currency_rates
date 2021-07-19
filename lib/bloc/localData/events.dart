@@ -62,7 +62,7 @@ class ReturnConnectionBody extends LocalDataEvent {
   List<Object> get props => [];
 }
 
-class GetAvailableToAddPairs extends LocalDataEvent {
+class GetChosenPairs extends LocalDataEvent {
   @override
   List<Object> get props => [];
 }

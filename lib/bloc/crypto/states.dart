@@ -37,10 +37,9 @@ class CryptoLoaded extends CryptoState {
 }
 class CryptoModal extends CryptoState {
   final String confirmationDetails;
-  final Modal_RequestType requestFrom;
-  CryptoModal({required this.confirmationDetails, required this.requestFrom});
+  CryptoModal({required this.confirmationDetails});
   @override
-  List<Object> get props => [confirmationDetails, requestFrom];
+  List<Object> get props => [confirmationDetails];
 }
 class ClosedCrypto extends CryptoState {
   @override

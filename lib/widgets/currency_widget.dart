@@ -16,8 +16,9 @@ class CurrencyWidget extends StatefulWidget {
   final String? oldPrice;
   final Function? onDeleteIconPress;
   final String? percent;
+  final Function? onGraphicPressed;
   CurrencyWidget({Key? key,
-    this.oldPrice,
+    this.oldPrice, required this.onGraphicPressed,
     this.deleteIcon, this.onDeleteIconPress,
     this.currencyName, this.percent,
     required this.currencyPrice,
@@ -26,6 +27,8 @@ class CurrencyWidget extends StatefulWidget {
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
 }
 class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
+  ChartSeriesController? _chartSeriesController;
+
   double? prevYmax;
   double? prevYmin;
   late Timer _timer;
@@ -84,7 +87,11 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       child: SizedBox(
         height: widget.styles.currencyWidgetHeight() + 1,
         width: 100,
-        child: SfCartesianChart(
+          child: SfCartesianChart(
+
+            onChartTouchInteractionUp: (d) {
+              widget.onGraphicPressed!();
+            },
             plotAreaBorderWidth: 0,
             primaryXAxis: DateTimeAxis(
                 maximum: DateTime.now() ,
@@ -94,13 +101,13 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
             primaryYAxis: NumericAxis(
                 maximum: prevYmax! + prevYmax! * 0.000001,
                 minimum: prevYmin! - prevYmin! * 0.000001,
-                // autoScrollingMode: AutoScrollingMode.end,
-                // anchorRangeToVisiblePoints: true,
-                // rangePadding: ChartRangePadding.none,
                 isVisible: false,
             ),
             series: <LineSeries<GraphicPrice, DateTime>>[
               LineSeries<GraphicPrice, DateTime>(
+                onRendererCreated: (ChartSeriesController controller) {
+                  _chartSeriesController = controller;
+                },
                 dataSource: dashedLine,
                 dashArray: <double>[3.5,3.5],
                 color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
@@ -198,13 +205,13 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
         ],
       ),
-      if(widget.deleteIcon != null && widget.deleteIcon!)
-        Positioned(
-            right: -20,
-            top: -15,
-            child: IconButton(
-              icon: Icon(Icons.remove_circle_sharp, color: Colors.red, size: 30),
-              onPressed: () => widget.onDeleteIconPress!(),))
+      // if(widget.deleteIcon != null && widget.deleteIcon!)
+      //   Positioned(
+      //       right: -20,
+      //       top: -15,
+      //       child: IconButton(
+      //         icon: Icon(Icons.remove_circle_sharp, color: Colors.red, size: 30),
+      //         onPressed: () => widget.onDeleteIconPress!(),))
     ],
     );
   }

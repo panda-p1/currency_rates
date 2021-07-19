@@ -141,32 +141,6 @@ class NotificationController {
 
       streamControllers[pair]!.add(crypto);
 
-      // if(pairs.contains(Currency_Pairs.eurrub) &&
-      //     btcrub.isNotEmpty && btceur.isNotEmpty
-      //     && (crypto.type == Currency_Pairs.btcrub || crypto.type == Currency_Pairs.btceur)) {
-      //   obj[Currency_Pairs.eurrub] = Crypto(
-      //       name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurrub),
-      //       price: Utils.makeShortPrice(double.parse(btcrub) / double.parse(btceur)),
-      //       type: Currency_Pairs.eurrub,
-      //   );
-      // }
-      // if(pairs.contains(Currency_Pairs.eurusd) &&
-      //     btceur.isNotEmpty && btcusd.isNotEmpty
-      //     && (crypto.type == Currency_Pairs.btceur || crypto.type == Currency_Pairs.btcusd)) {
-      //   obj[Currency_Pairs.eurusd] = Crypto(
-      //       name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.eurusd),
-      //       price: Utils.makeShortPrice(double.parse(btcusd) / double.parse(btceur)),
-      //       type: Currency_Pairs.eurusd);
-      // }
-      // if(pairs.contains(Currency_Pairs.usdrub) &&
-      //     btcusd.isNotEmpty && btcrub.isNotEmpty
-      //     && (crypto.type == Currency_Pairs.btcusd || crypto.type == Currency_Pairs.btcrub)) {
-      //   obj[Currency_Pairs.usdrub] =  Crypto(
-      //       name: CryptoFromBackendHelper.getNameByCurrencyType(Currency_Pairs.usdrub),
-      //       price: Utils.makeShortPrice(double.parse(btcrub) / double.parse(btcusd)),
-      //       type: Currency_Pairs.usdrub);
-      // }
-      // streamController.add(obj);
       return;
     }).onDone(() => _onDoneChannel(pair));
   }

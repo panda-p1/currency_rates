@@ -29,9 +29,9 @@ class LocalDataBloc extends Bloc<LocalDataEvent, LocalDataState> {
       NotificationController.getInstance().addPair(event.pair);
       await localDataRepo.addPair(event.pair);
     }
-    if(event is GetAvailableToAddPairs) {
-      final pairs = await localDataRepo.getAvailableToAddPairs();
-      yield AvailableToAddPairs(pairs: pairs);
+    if(event is GetChosenPairs) {
+      final pairs = await localDataRepo.getChosenPairs();
+      yield GetChosenPairsState(pairs: pairs);
     }
     if(event is DecreaseDelay) {
       try {

@@ -1,18 +1,63 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../styles.dart';
 
 class CryptoLoader extends StatefulWidget {
   final CurrencyStyles styles;
-  const CryptoLoader({Key? key, required this.styles}) : super(key: key);
+  final bool isEditingMode;
+  final Function onDeletePress;
+  final String cryptoName;
+  const CryptoLoader({Key? key,
+    required this.onDeletePress, required this.styles,
+    required this.cryptoName, required this.isEditingMode}) : super(key: key);
 
   @override
   _CryptoLoaderState createState() => _CryptoLoaderState();
 }
 
 class _CryptoLoaderState extends State<CryptoLoader> {
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+        if(widget.isEditingMode)
+          IconButton(
+              onPressed: () => widget.onDeletePress(widget.cryptoName),
+              icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+          if(widget.isEditingMode)
+
+            Center(child: Text(widget.cryptoName,
+            style: TextStyle(
+              fontSize: widget.styles.currencyNameFontSize(),
+              color: widget.styles.currencyNameFontColor()))
+            ),
+          if(!widget.isEditingMode)
+            Loader(styles: widget.styles,)
+        ],
+
+    );
+  }
+
+}
+
+class Loader extends StatefulWidget {
+  final CurrencyStyles styles;
+
+  const Loader({Key? key, required this.styles}) : super(key: key);
+
+  @override
+  _LoaderState createState() => _LoaderState();
+}
+
+class _LoaderState extends State<Loader> {
   String dots = '.';
   late Timer _timer;
 
@@ -25,7 +70,6 @@ class _CryptoLoaderState extends State<CryptoLoader> {
     });
     super.initState();
   }
-
   @override
   Widget build(BuildContext context) {
     return Container(

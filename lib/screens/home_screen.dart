@@ -42,11 +42,8 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
-  Map<String, ChartSeriesController?> _chartSeriesController = {};
 
   Map<String, List<GraphicPrice>> chartData = {};
-
-  var firstCryptoPrices = {};
 
   var itemsLength = 0;
   var key = UniqueKey();
@@ -188,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     );
                   }
                   if(state is CryptoModal) {
-                    Future.delayed(Duration.zero, () => _showConfirmDialog(state.confirmationDetails, state.requestFrom));
+                    Future.delayed(Duration.zero, () => _showConfirmDialog(state.confirmationDetails));
                   }
                   return Container();
                 }, buildWhen: (state1, state2) => state2 is CryptoModal || state2 is CryptoEmptyState || state2 is CryptoClosingState,
@@ -303,7 +300,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return Container();
       }
       if(state is CryptoLoading) {
-        return CryptoLoader(styles: PortraitStyles(),);
+        return Loader(
+          styles: PortraitStyles(),
+          );
       }
       if(state is LocalCryptoLoaded) {
         retryConnectionTimer = Timer(Duration(seconds: 2), () {
@@ -322,27 +321,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       return Container();
     }, buildWhen: (_,state2) => state2 is! CryptoEmptyState && state2 is! CryptoModal && state2 is! CryptoClosingState,);
 
-  }
-
-  SfCartesianChart _buildLiveLineChart(String cryptoName) {
-    return SfCartesianChart(
-        plotAreaBorderWidth: 0,
-        primaryXAxis: DateTimeAxis(),
-        primaryYAxis: NumericAxis(
-            axisLine: const AxisLine(width: 0),
-            majorTickLines: const MajorTickLines(size: 0)),
-        series: <LineSeries<GraphicPrice, DateTime>>[
-          LineSeries<GraphicPrice, DateTime>(
-            onRendererCreated: (ChartSeriesController controller) {
-              _chartSeriesController[cryptoName] = controller;
-            },
-            dataSource: chartData[cryptoName] == null ? [] : chartData[cryptoName]!,
-            color: const Color.fromRGBO(192, 108, 132, 1),
-            xValueMapper: (GraphicPrice sales, _) => sales.time,
-            yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
-            animationDuration: 0,
-          )
-        ]);
   }
 
   Widget _UI({required List<Widget> items}) {
@@ -406,10 +384,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     MultiBlocProvider(
                       providers: [
                         BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
-                        BlocProvider.value(
-                          value: BlocProvider.of<LocalDataBloc>(context),
-                          child: ConfigScreen(),
-                        )
+                        BlocProvider.value(value: BlocProvider.of<LocalDataBloc>(context),)
                         // BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
                       ],
                       child: AddTickerScreen(),)
@@ -428,13 +403,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   Widget Function(CurrencyStyles styles)
-   _orientatedCurrencyWidget({required Crypto crypto, required Modal_RequestType requestFrom}) {
+   _orientatedCurrencyWidget({required Crypto crypto}) {
     return (CurrencyStyles styles) {
-      return _listenableCurrencyWidget(styles: styles, crypto: crypto, requestFrom: requestFrom);
+      return _listenableCurrencyWidget(styles: styles, crypto: crypto);
     };
   }
 
-  Future<bool> _showConfirmDialog(String confirmationDetails, Modal_RequestType requestFrom) async {
+  Future<bool> _showConfirmDialog(String confirmationDetails) async {
     controller.stop();
     final d = confirmationDetails;
     await showDialog<void>(
@@ -460,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               child: const Text('confirm'),
               onPressed: () {
                 Navigator.pop(alertContext);
-                context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: d, requestFrom: requestFrom));
+                context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: d));
                 controller.forward();
               },
             ),
@@ -483,7 +458,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   Widget _cryptoLoaded(Map<String, StreamController<Crypto?>> streamControllers) {
 
-    // marker
     cryptoController = streamControllers;
     final List<Widget> items = streamControllers.values.map((e) {
       return StreamBuilder<Crypto?>(
@@ -495,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               }
             }
             if(!snapshot.hasData) {
-              return CryptoLoader(styles: PortraitStyles(),);
+              return _loaderWrapper(streamControllers.keys.toList()[streamControllers.values.toList().indexOf(e)]);
             }
             final crypto = snapshot.data!;
             if(!previousCurrencies.containsKey(crypto.name)) {
@@ -520,7 +494,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             //   chartData[crypto.name] = [GraphicPrice(time: DateTime.now(), open: crypto.price, close: crypto.price)];
             // }
 
-            return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.internet)(PortraitStyles());
+            return _orientatedCurrencyWidget(crypto: crypto)(PortraitStyles());
       });
     }).toList();
     // final wrap = ReorderableWrap(
@@ -646,40 +620,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     // );
   }
 
-  void _onDeletePair(String name, Modal_RequestType requestFrom,) {
-      context.read<CryptoBloc>().add(CryptoRemovePair(pair: name, requestFrom: requestFrom));
+  Widget _loaderWrapper(String cryptoName) {
+    return ValueListenableBuilder<bool>(
+        valueListenable: isEditingMode,
+        builder: (_, mode, __) {
+          if(mode) {
+            return CryptoLoader(
+              styles: PortraitStyles(),
+              onDeletePress: _onDeletePair,
+              isEditingMode: true,
+              cryptoName: cryptoName,
+            );
+          }
+          return CryptoLoader(
+            styles: PortraitStyles(),
+            onDeletePress: _onDeletePair,
+            isEditingMode: false,
+            cryptoName: cryptoName,
+          );
+        });
   }
 
-  Widget _listenableCurrencyWidget({required Modal_RequestType requestFrom, required CurrencyStyles styles, required Crypto crypto}) {
+  void _onDeletePair(String name) {
+      context.read<CryptoBloc>().add(CryptoRemovePair(pair: name));
+  }
 
+  Widget _listenableCurrencyWidget({required CurrencyStyles styles, required Crypto crypto}) {
+    final navigate = () => Navigator.push(context, MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
+          child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.name]!,),
+        )
+    ));
     return ValueListenableBuilder<bool>(
       valueListenable: isEditingMode,
       builder: (_, mode, __) {
         return InkWell(
-          onTap: !mode ? () {
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => BlocProvider(
-                  create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
-                  child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.name]!,),
-                )
-            ));
-          } : null,
+          onTap: !mode ? navigate : null,
 
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if(mode && styles is PortraitStyles) IconButton(onPressed: () => _onDeletePair(crypto.name, requestFrom), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
+              if(mode) IconButton(onPressed: () => _onDeletePair(crypto.name), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
 
               Expanded(
                 child: CurrencyWidget(
+                    onGraphicPressed: !mode ? navigate : null,
                     oldPrice: previousCurrencies[crypto.name]!,
                     percent: crypto.changePercent,
                     styles: styles,
                     currencyPrice: crypto.price,
                     currencyName: crypto.name,
-                    deleteIcon:  styles is LandscapeStyles && mode,
-                    onDeleteIconPress: () => _onDeletePair(crypto.name, requestFrom)
+                    deleteIcon: mode,
+                    onDeleteIconPress: () => _onDeletePair(crypto.name)
                 ),
               ),
 
@@ -708,7 +702,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       if(crypto == null) {
         return null;
       }
-      return _orientatedCurrencyWidget(crypto: crypto, requestFrom: Modal_RequestType.local);
+      return _orientatedCurrencyWidget(crypto: crypto);
     }).toList();
 
 
@@ -806,6 +800,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     if(state == AppLifecycleState.resumed) {
       context.read<CryptoBloc>().add(CryptoInitConnection());
     } else {
+      previousCurrencies = {};
       context.read<CryptoBloc>().add(CryptoCloseAllConnections());
     }
     setState(() {

@@ -140,12 +140,13 @@
 
 import 'dart:async';
 
-import 'package:connectivity/connectivity.dart';
+import 'package:currencies_pages/api/localData.dart';
 import 'package:currencies_pages/bloc/currency/bloc.dart';
 import 'package:currencies_pages/bloc/currency/events.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
 import 'package:currencies_pages/bloc/localData/events.dart';
+import 'package:currencies_pages/bloc/localData/states.dart';
 import 'package:currencies_pages/model/currencies.dart';
 import 'package:currencies_pages/widgets/add_ticker_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -165,6 +166,7 @@ class AddTickerScreen extends StatefulWidget {
 
 class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingObserver, TickerProviderStateMixin {
   Map<String, bool> pairsAdded = {};
+  List<String> chosenPairs = [];
   bool connected = true;
 
   final ValueNotifier<bool> filterOpened = ValueNotifier<bool>(true);
@@ -174,45 +176,50 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
   bool baseInputFocused = false;
   bool quoteInputFocused = false;
 
-  late final StreamSubscription<ConnectivityResult> internetSubscription;
+  // late final StreamSubscription<ConnectivityResult> internetSubscription;
   @override
   void initState() {
+    _getChosenPairs();
     _initCurrencies();
-    initConnect();
+    // _initConnect();
     super.initState();
 
-    internetSubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      if(result == ConnectivityResult.none) {
-        setState(() {
-          connected = false;
-        });
-      } else {
-        setState(() {
-          connected = true;
-        });
-      }
-      // Got a new connectivity status!
-    });
+    // internetSubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+    //   if(result == ConnectivityResult.none) {
+    //     setState(() {
+    //       connected = false;
+    //     });
+    //   } else {
+    //     setState(() {
+    //       connected = true;
+    //     });
+    //   }
+    //   // Got a new connectivity status!
+    // });
   }
-  initConnect() async {
-    final isDeviceConnectedToInternet = await Connectivity().checkConnectivity() != ConnectivityResult.none;
-    setState(() {
-      connected = isDeviceConnectedToInternet;
-    });
+  // void _initConnect() async {
+  //   final isDeviceConnectedToInternet = await Connectivity().checkConnectivity() != ConnectivityResult.none;
+  //   setState(() {
+  //     connected = isDeviceConnectedToInternet;
+  //   });
+  // }
+
+  void _getChosenPairs() async {
+    chosenPairs = await LocalDataProvider().getChosenPairs();
   }
 
   @override
   void dispose() {
-    internetSubscription.cancel();
+    // internetSubscription.cancel();
     super.dispose();
   }
-  _initCurrencies() {
+  void _initCurrencies() {
     context.read<CurrenciesBloc>().add(GetBinance());
   }
-  _onBaseFocusChange() {
+  void _onBaseFocusChange() {
     setState(() {baseInputFocused = !baseInputFocused;});
   }
-  _onQuoteFocusChange() {
+  void _onQuoteFocusChange() {
     setState(() {quoteInputFocused = !quoteInputFocused;});
   }
   @override
@@ -240,6 +247,7 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
               if(pairsAdded.isEmpty) {
                 pairsAdded = {for (var currency in state.currencies.currencies) (currency.baseAsset + currency.quoteAsset): false};
               }
+
               return _bodyUI(currencies: state.currencies);
             }
             if(state is LocalCurrenciesLoaded) {
@@ -258,7 +266,7 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
             }
             return Text('');
           }),
-        )
+        ),
       ],
     );
   }
@@ -303,11 +311,13 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
 
   Widget _availablePairsView(List<Currency> pairs) {
     final Color? buttonColor = connected ? null : Colors.grey;
-
+    print(chosenPairs);
     final filteredPairs = pairs.where((currency) =>
+        !chosenPairs.contains(currency.baseAsset + currency.quoteAsset) &&
         currency.baseAsset.toLowerCase().startsWith(baseInputValue.toLowerCase())
         && currency.quoteAsset.toLowerCase().startsWith(quoteInputValue.toLowerCase())
     ).toList();
+    print(filteredPairs.map((currency) => currency.quoteAsset + currency.baseAsset));
 
     if(baseInputValue.isEmpty && quoteInputValue.isEmpty) {
       return _typeToSeeTip();
@@ -322,6 +332,7 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
         itemCount: filteredPairs.length,
         itemBuilder: (_, index) {
           final pair = filteredPairs[index];
+          final queryName = pair.baseAsset + pair.quoteAsset;
           return Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Row(
@@ -332,12 +343,12 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
                 Container(
                   decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      color: buttonColor != null ? buttonColor : !pairsAdded[ (pair.baseAsset + pair.quoteAsset)]! ? Colors.blue : Colors.red
+                      color: buttonColor != null ? buttonColor: !pairsAdded[queryName]! ? Colors.blue : Colors.red
                   ),
                   child: Center(
                     child: TextButton(
-                      onPressed: () => connected ? _onPairClick(pair.baseAsset + pair.quoteAsset) : null,
-                      child: !pairsAdded[(pair.baseAsset + pair.quoteAsset)]! ? _styledTextButton('Add') : _styledTextButton('undo'),
+                      onPressed: () => connected ? _onPairClick(queryName) : null,
+                      child: !pairsAdded[queryName]! ? _styledTextButton('Add') : _styledTextButton('undo'),
                     ),
                   ),
                 )
