@@ -43,7 +43,10 @@ class _CryptoLoaderState extends State<CryptoLoader> {
           ),
         ),
         Spacer(),
-        Loader(styles: widget.styles,)
+        Padding(
+          padding: EdgeInsets.only(right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
+          child: Loader(styles: widget.styles,),
+        )
         ],
 
     );
