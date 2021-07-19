@@ -32,6 +32,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   double? prevYmax;
   double? prevYmin;
   late Timer _timer;
+  late Timer _reloadTimer;
   Color? color;
   String? previousPrice;
   bool animate = false;
@@ -40,8 +41,34 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   List<GraphicPrice> chartData = [];
   @override
   void initState() {
+    prevYmin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+    prevYmax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+
     _timer = Timer(Duration(milliseconds: 400), () {
       _timer.cancel();
+    });
+    _reloadTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      dashedLine = [];
+      for(var i = 0; i < 21; i++) {
+        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+      }
+      chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
+
+      dashedLine = [];
+      for(var i = 0; i < 21; i++) {
+        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+      }
+      if(chartData.length == 70) {
+        chartData.removeAt(0);
+      }
+      final yMax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+      final yMin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+      if(prevYmax! < yMax) {
+        prevYmax = yMax;
+      }
+      if(prevYmin! > yMin) {
+        prevYmin = yMin;
+      }
     });
     for(var i = 0; i < 21; i++) {
       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
@@ -52,36 +79,13 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   }
   @override
   void didUpdateWidget(oldWidget) {
-    dashedLine = [];
-    for(var i = 0; i < 21; i++) {
-      dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
-    }
-    if(oldWidget.currencyPrice != widget.currencyPrice) {
-      chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
 
-      dashedLine = [];
-      for(var i = 0; i < 21; i++) {
-        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
-      }
-      if(chartData.length == 70) {
-        chartData.removeAt(0);
-      } else {}
-    }
 
     super.didUpdateWidget(oldWidget);
   }
 
   Widget _buildLiveLineChart() {
-    final yMax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-    final yMin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-    if(prevYmin == null) prevYmin = yMin;
-    if(prevYmax == null) prevYmax = yMax;
-    if(prevYmax! < yMax) {
-      prevYmax = yMax;
-    }
-    if(prevYmin! > yMin) {
-      prevYmin = yMin;
-    }
+
 
     return Center(
       child: SizedBox(
@@ -131,6 +135,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   @override
   void dispose() {
     _timer.cancel();
+    _reloadTimer.cancel();
     super.dispose();
   }
 
