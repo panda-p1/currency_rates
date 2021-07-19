@@ -20,8 +20,6 @@ class CryptoLoader extends StatefulWidget {
 
 class _CryptoLoaderState extends State<CryptoLoader> {
 
-
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -46,9 +44,7 @@ class _CryptoLoaderState extends State<CryptoLoader> {
         Padding(
           padding: EdgeInsets.only(right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
           child: Loader(styles: widget.styles,),
-        )
-        ],
-
+        )],
     );
   }
 

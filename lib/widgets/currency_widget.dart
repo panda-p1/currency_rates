@@ -53,7 +53,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
         dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
       }
       chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
-
+      print(widget.currencyName);
+      print(chartData.length);
       dashedLine = [];
       for(var i = 0; i < 21; i++) {
         dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
@@ -69,6 +70,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       if(prevYmin! > yMin) {
         prevYmin = yMin;
       }
+      setState(() {});
     });
     for(var i = 0; i < 21; i++) {
       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
@@ -77,16 +79,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
     super.initState();
   }
-  @override
-  void didUpdateWidget(oldWidget) {
-
-
-    super.didUpdateWidget(oldWidget);
-  }
 
   Widget _buildLiveLineChart() {
-
-
     return Center(
       child: SizedBox(
         height: widget.styles.currencyWidgetHeight() + 1,
