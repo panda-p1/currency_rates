@@ -2,7 +2,7 @@
     package="com.example.currencies_pages">
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="currencies_pages"
+        android:label="Crypto Ticker"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

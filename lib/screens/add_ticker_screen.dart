@@ -311,13 +311,11 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
 
   Widget _availablePairsView(List<Currency> pairs) {
     final Color? buttonColor = connected ? null : Colors.grey;
-    print(chosenPairs);
     final filteredPairs = pairs.where((currency) =>
         !chosenPairs.contains(currency.baseAsset + currency.quoteAsset) &&
         currency.baseAsset.toLowerCase().startsWith(baseInputValue.toLowerCase())
         && currency.quoteAsset.toLowerCase().startsWith(quoteInputValue.toLowerCase())
     ).toList();
-    print(filteredPairs.map((currency) => currency.quoteAsset + currency.baseAsset));
 
     if(baseInputValue.isEmpty && quoteInputValue.isEmpty) {
       return _typeToSeeTip();

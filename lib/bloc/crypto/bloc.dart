@@ -17,7 +17,9 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   Stream<CryptoState> mapEventToState(event) async* {
     print(event);
     if(event is ReorderPair) {
+      localDataProvider.reorderPairs(event.newIdx, event.pair);
       // notifCtrl.reorderPair(event.newIdx, event.pair);
+      // yield CryptoLoaded(streamControllers: notifCtrl.streamControllers);
     }
     if(event is LocalReorderPair) {
       await localDataProvider.reorderPairs(event.newIdx, event.pair);
@@ -30,16 +32,16 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       if(isEmpty) {
         yield CryptoEmpty();
       } else {
-        final controller = notifCtrl.streamControllers;
-        yield CryptoLoaded(streamControllers: controller);
+        final controllers = notifCtrl.streamControllers;
+        yield CryptoLoaded(streamControllers: controllers);
       }
     }
     if(event is CryptoInitConnection) {
       try {
         yield CryptoLoading();
         await notifCtrl.initWebSocketConnection();
-        final controller = notifCtrl.streamControllers;
-        yield CryptoLoaded(streamControllers: controller);
+        final controllers = notifCtrl.streamControllers;
+        yield CryptoLoaded(streamControllers: controllers);
       } catch(e) {
         print(e);
         print('crypto error caught');
@@ -54,7 +56,6 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       }
     }
     if(event is CryptoRemovePair) {
-
       yield CryptoModal(confirmationDetails: event.pair);
     }
     if(event is NotConfirmedRemovePair) {
@@ -65,11 +66,10 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
 
       final pair = event.pair;
       localDataProvider.removePair(pair);
+      notifCtrl.confirmedCloseConnection(pair);
 
       // if(event.requestFrom == Modal_RequestType.internet) {
-        await notifCtrl.confirmedCloseConnection(pair);
-        final controller = notifCtrl.streamControllers;
-        yield CryptoLoaded(streamControllers: controller);
+      //   final controller = notifCtrl.streamControllers;
       // }
       // if(event.requestFrom == Modal_RequestType.local) {
       //   final currencies = await localDataProvider.getLocalCurrencies();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:currencies_pages/model/graphic_price.dart';
 import 'package:flutter/cupertino.dart';
@@ -16,18 +17,20 @@ class CurrencyWidget extends StatefulWidget {
   final String? oldPrice;
   final Function? onDeleteIconPress;
   final String? percent;
+
   final Function? onGraphicPressed;
+  final List<GraphicPrice> chartData;
+
   CurrencyWidget({Key? key,
     this.oldPrice, required this.onGraphicPressed,
     this.deleteIcon, this.onDeleteIconPress,
     this.currencyName, this.percent,
-    required this.currencyPrice,
+    required this.currencyPrice, required this.chartData,
     required this.styles}) : super(key: key);
   @override
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
 }
 class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStateMixin {
-  ChartSeriesController? _chartSeriesController;
 
   double? prevYmax;
   double? prevYmin;
@@ -38,11 +41,18 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   bool animate = false;
   List<GraphicPrice> dashedLine = [];
   //Initialize the data source
-  List<GraphicPrice> chartData = [];
   @override
   void initState() {
-    prevYmin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-    prevYmax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+    if(widget.chartData.isNotEmpty) {
+      prevYmin = double.parse(widget.oldPrice!)
+          - (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
+              - double.parse(widget.oldPrice!)
+          ).abs();
+      prevYmax = double.parse(widget.oldPrice!)
+          + (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
+              -double.parse(widget.oldPrice!)
+          ).abs();
+    }
 
     _timer = Timer(Duration(milliseconds: 400), () {
       _timer.cancel();
@@ -52,30 +62,31 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       for(var i = 0; i < 21; i++) {
         dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
       }
-      chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
-      print(widget.currencyName);
-      print(chartData.length);
+      // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
       dashedLine = [];
       for(var i = 0; i < 21; i++) {
         dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
       }
-      if(chartData.length == 70) {
-        chartData.removeAt(0);
+      // if(chartData.length == 70) {
+      //   chartData.removeAt(0);
+      // }
+      if(widget.chartData.isNotEmpty) {
+        final yMax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+        final yMin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
+        if(prevYmax! < yMax) {
+          prevYmax = yMax;
+        }
+        if(prevYmin! > yMin) {
+          prevYmin = yMin;
+        }
+        setState(() {});
       }
-      final yMax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-      final yMin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-      if(prevYmax! < yMax) {
-        prevYmax = yMax;
-      }
-      if(prevYmin! > yMin) {
-        prevYmin = yMin;
-      }
-      setState(() {});
+
     });
     for(var i = 0; i < 21; i++) {
       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
     }
-    chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
+    // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
 
     super.initState();
   }
@@ -85,43 +96,42 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       child: SizedBox(
         height: widget.styles.currencyWidgetHeight() + 1,
         width: 100,
-          child: SfCartesianChart(
-            onChartTouchInteractionUp: (d) {
-              widget.onGraphicPressed!();
-            },
-            plotAreaBorderWidth: 0,
-            primaryXAxis: DateTimeAxis(
-                maximum: DateTime.now() ,
-                minimum: DateTime.now().subtract(Duration(minutes: 1)),
-                isVisible: false
-            ),
-            primaryYAxis: NumericAxis(
-                maximum: prevYmax! + prevYmax! * 0.000001,
-                minimum: prevYmin! - prevYmin! * 0.000001,
-                isVisible: false,
-            ),
-            series: <LineSeries<GraphicPrice, DateTime>>[
-              LineSeries<GraphicPrice, DateTime>(
-                onRendererCreated: (ChartSeriesController controller) {
-                  _chartSeriesController = controller;
-                },
-                dataSource: dashedLine,
-                dashArray: <double>[3.5,3.5],
-                color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
-                xValueMapper: (GraphicPrice sales, _) => sales.time,
-                yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+          child: Center(
+            child: SfCartesianChart(
+              onChartTouchInteractionUp: (d) {
+                widget.onGraphicPressed!();
+              },
+              plotAreaBorderWidth: 0,
+              primaryXAxis: DateTimeAxis(
+                  maximum: DateTime.now() ,
+                  minimum: DateTime.now().subtract(Duration(minutes: 1)),
+                  isVisible: false
+              ),
+              primaryYAxis: NumericAxis(
+                  maximum: prevYmax! + prevYmax! * 0.000001,
+                  minimum: prevYmin! - prevYmin! * 0.000001,
+                  isVisible: false,
+              ),
+              series: <LineSeries<GraphicPrice, DateTime>>[
+                LineSeries<GraphicPrice, DateTime>(
+                  dataSource: dashedLine,
+                  dashArray: <double>[3.5,3.5],
+                  color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+                  xValueMapper: (GraphicPrice sales, _) => sales.time,
+                  yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+                    animationDuration: 0
+
+                ),
+                LineSeries<GraphicPrice, DateTime>(
+                  dataSource: widget.chartData,
+                  color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+                  xValueMapper: (GraphicPrice sales, _) => sales.time,
+                  yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
                   animationDuration: 0
+                ),
 
-              ),
-              LineSeries<GraphicPrice, DateTime>(
-                dataSource: chartData,
-                color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
-                xValueMapper: (GraphicPrice sales, _) => sales.time,
-                yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
-                animationDuration: 0
-              ),
-
-            ]),
+              ]),
+          ),
       ),
     );
   }
@@ -173,7 +183,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
               children: [
                 _currencyName(),
                 Spacer(),
-                _buildLiveLineChart(),
+                if(widget.chartData.isNotEmpty) _buildLiveLineChart(),
                 _currencyPrice(),
               ],
             ),

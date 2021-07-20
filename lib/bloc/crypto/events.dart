@@ -72,7 +72,7 @@ class LocalReorderPair extends CryptoEvent {
 
 class ReorderPair extends CryptoEvent {
   final int newIdx;
-  final Currency_Pairs pair;
+  final String pair;
   ReorderPair({required this.newIdx, required this.pair});
   @override
   List<Object> get props => [newIdx, pair];

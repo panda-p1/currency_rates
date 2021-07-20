@@ -75,16 +75,18 @@ class NotificationController {
 
   Map<String, WebSocket> channels = {};
 
-  reorderPair(int newIdx, String pair) {
-    final List<MapEntry<String, Crypto?>> list = [];
-    obj.forEach((k,v) => list.add(MapEntry(k,v)));
-    final oldIndex = obj.keys.toList().indexOf(pair);
-    list.removeAt(oldIndex);
-    list.insert(newIdx, MapEntry(pair, obj[pair]));
+  Map<String, StreamController<Crypto?>> reorderPair(int newIdx, String pair) {
+    print(streamControllers.keys);
+    final List<MapEntry<String, StreamController<Crypto?>>> list = [];
+    streamControllers.forEach((k,v) => list.add(MapEntry(k,v)));
+    final oldIndex = streamControllers.keys.toList().indexOf(pair);
+    final item = list.removeAt(oldIndex);
+    list.insert(newIdx, MapEntry(pair, item.value));
 
-    final Map<String, Crypto?> newObj = {};
+    final Map<String, StreamController<Crypto?>> newObj = {};
     newObj.addEntries(list);
-    obj = {...newObj};
+    streamControllers = {...newObj};
+    return streamControllers;
   }
 
   Future<void> confirmedCloseConnection(String pair) async {
@@ -92,7 +94,6 @@ class NotificationController {
       channels[pair]!.close();
     }
     pairs.remove(pair);
-    obj.remove(pair);
   }
 
   addStreamCtrl(String pair) {

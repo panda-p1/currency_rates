@@ -63,13 +63,13 @@ class LocalDataProvider implements LocalDataRepo {
       prefs.setString('binanceCurrencies', jsonEncode(currencies));
     }
     Future<Null> reorderPairs(int newIdx, String pair) async {
-    // final prefs = await SharedPreferences.getInstance();
-    // final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
-    // final pairString = Utils.getValueAfterDot(pair);
-    // final oldIdx = pairsJson.indexOf(pairString);
-    // pairsJson.removeAt(oldIdx);
-    // pairsJson.insert(newIdx, pairString);
-    // prefs.setString('chosenPairs', jsonEncode(pairsJson));
+    final prefs = await SharedPreferences.getInstance();
+    final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
+
+    final oldIdx = pairsJson.indexOf(pairsJson);
+    final val = pairsJson.removeAt(oldIdx);
+    pairsJson.insert(newIdx, val);
+    prefs.setString('chosenPairs', jsonEncode(pairsJson));
     //
     // final currencies = await getLocalCurrencies();
     // final List<MapEntry<Currency_Pairs, Crypto?>> list = [];
@@ -100,12 +100,8 @@ class LocalDataProvider implements LocalDataRepo {
       print('local data remove pair');
     final prefs = await SharedPreferences.getInstance();
     final pairs = await getChosenPairs();
-    print(pairs);
-    print(pair);
     pairs.removeWhere((element) => element == pair);
-    print(pairs);
     prefs.setString('chosenPairs', jsonEncode(pairs));
-    final localCurrencies = await getLocalCurrencies();
 
     // localCurrencies.remove(pair);
     // await storeCurrencies(localCurrencies);
@@ -116,14 +112,11 @@ class LocalDataProvider implements LocalDataRepo {
     prefs.setString('chosenPairs', jsonEncode(defaultTickers));
     return null;
   }
-  @override
 
   @override
   Future<List<String>> getChosenPairs() async {
     final prefs = await SharedPreferences.getInstance();
     final pairsString = prefs.getString('chosenPairs');
-    // saveDefaultPairs();
-    // return defaultTickers;
     if(pairsString == null) {
       saveDefaultPairs();
       return defaultTickers;
