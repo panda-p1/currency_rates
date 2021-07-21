@@ -274,62 +274,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         )
     );
   }
-  int _indexOfKey(Key key) {
-    return orderListener.value.keys.toList().indexWhere((w) => Key(w.hashCode.toString()) == key);
-  }
+
   _wrapItems(Map<String, Widget> renderItems, Map<String, int> order) {
     if(order.length == 0) {
       return _banner();
     }
-    // return List.ReorderableList(
-    //   child: ListView.separated(
-    //       itemBuilder: (_, idx) {
-    //               final key = order.keys.toList()[idx];
-    //               final item = Slidable(
-    //                 key: ValueKey(order[key]), // A key is necessary.
-    //
-    //                 endActionPane: ActionPane(
-    //                   extentRatio: 0.3,
-    //                   motion: BehindMotion(),
-    //                   dismissible: DismissiblePane(
-    //                     onDismissed: () {
-    //                       _removePair(key);
-    //                     },
-    //                   ),
-    //                   children: [
-    //                     SlidableAction(
-    //                       onPressed: (s) {
-    //                         _removePair(key);
-    //                       },
-    //                       backgroundColor: Color(0xFFFE4A49),
-    //                       label: 'Remove',
-    //                     ),
-    //
-    //                   ],
-    //                 ),
-    //                 child: renderItems[key] == null ? Container() : renderItems[key]!,
-    //
-    //               );
-    //               return item;
-    //       },
-    //       separatorBuilder: () {
-    //
-    //       },
-    //       itemCount: renderItems.length),
-    //   onReorder: (oldIx, newIx) {
-    //     oldIdx = _indexOfKey(oldIx);
-    //     newIdx = _indexOfKey(newIdx);
-    //     if(newIdx > oldIdx) newIdx -= 1;
-    //     final old = orderListener.value;
-    //     final List<MapEntry<String, int>> list = [];
-    //     old.forEach((k,v) => list.add(MapEntry(k,v)));
-    //     final item = list.removeAt(oldIdx);
-    //     list.insert(newIdx, MapEntry(item.key, item.value));
-    //     final Map<String, int> newObj = {};
-    //     newObj.addEntries(list);
-    //     orderListener.value = {...newObj};
-    //   }
-    // );
     return ReorderableListView(
         buildDefaultDragHandles: false,
         shrinkWrap: true,
@@ -462,7 +411,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     return SingleChildScrollView(
       child: Column(
         children: [
-          // wrap,
           ValueListenableBuilder<Map<String, int>>(
               valueListenable: orderListener,
               builder: (_, order, __) {
@@ -495,12 +443,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   Widget _listenableCurrencyWidget({required CurrencyStyles styles, required Crypto crypto}) {
-    final navigate = () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => BlocProvider(
-          create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
-          child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.name]!,),
-        )
-    ));
+    final navigate = () {
+      final child = cryptoController[crypto.name] == null ? Container() : CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.name]!,);
+      return Navigator.push(context, MaterialPageRoute(
+          builder: (_) => BlocProvider(
+        create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),
+        child: child,
+      )));
+    };
     return InkWell(
       onTap: navigate,
       child: Column(
@@ -554,11 +504,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       ),
     );
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: isEditingMode,
-      builder: (_, mode, __) {
-      }
-    );
   }
 
   Widget _cryptoWaiter() {
