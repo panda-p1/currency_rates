@@ -182,8 +182,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return Container();
       }
       if(state is CryptoLoading) {
-        print('firstLaunch');
-        print(firstLaunch);
         if(firstLaunch) {
           return Loader(styles: PortraitStyles(),);
         } else {
@@ -276,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  _wrapItems(Map<String, ValueListenableBuilder<Crypto?>> renderItems, Map<String, int> order) {
+  _wrapItems(Map<String, Widget> renderItems, Map<String, int> order) {
     return ReorderableListView(
         buildDefaultDragHandles: false,
         shrinkWrap: true,
@@ -414,6 +412,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     final renderItems = streamControllers.map((key, value) {
       return MapEntry(
         key,
+          streamsNotifiers[key] != null ?
         ValueListenableBuilder<Crypto?>(
             valueListenable: streamsNotifiers[key]!,
             builder: (_, crypto, __) {
@@ -423,6 +422,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               }
               return _orientatedCurrencyWidget(crypto: crypto)(PortraitStyles());
             })
+              : Container()
       );
     });
     return SingleChildScrollView(
