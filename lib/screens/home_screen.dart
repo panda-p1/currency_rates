@@ -186,10 +186,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           return Loader(styles: PortraitStyles(),);
         } else {
           if(streamsNotifiers.isEmpty) {
-            print(previousCurrencies);
-            print(lastCurrencies);
             streamsNotifiers = cryptoController.map((key, value) {
-              print(key);
+              if(lastCurrencies[key] == null) {
+                lastCurrencies[key] = '0.0';
+              }
               return MapEntry(key, ValueNotifier(Crypto(price: lastCurrencies[key]!, name: key, queryName: key, )));
             });
           }
@@ -390,6 +390,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             }
             if(!snapshot.hasData) {
               if(!firstLaunch) {
+                final key = streamControllers.keys.firstWhere(
+                        (k) => streamControllers[k] == e);
+                if(lastCurrencies[key] == '0.0') {
+                  Future.delayed(Duration.zero, () {
+                    if(streamsNotifiers[key] != null) {
+                      streamsNotifiers[key]!.value = null;
+                    }
+                  });
+                }
                 return Container();
               }
               return Container();
@@ -495,7 +504,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
           Expanded(
             child: CurrencyWidget(
-              chartData: chartData[crypto.name]!,
               onGraphicPressed: navigate,
               oldPrice: previousCurrencies[crypto.name] == null ? lastCurrencies[crypto.name]! : previousCurrencies[crypto.name]!,
               percent: crypto.changePercent,

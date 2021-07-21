@@ -17,12 +17,12 @@ class CurrencyWidget extends StatefulWidget {
   final String? percent;
 
   final Function? onGraphicPressed;
-  final List<GraphicPrice> chartData;
+  // final List<GraphicPrice> chartData;
 
   CurrencyWidget({Key? key,
     required this.oldPrice, required this.onGraphicPressed,
     this.currencyName, this.percent,
-    required this.currencyPrice, required this.chartData,
+    required this.currencyPrice,
     required this.styles}) : super(key: key);
   @override
   State<CurrencyWidget> createState() => _CurrencyWidgetState();
@@ -103,50 +103,50 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   //   }
   //   // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
   // }
-  Widget _buildLiveLineChart() {
-    return Center(
-      child: SizedBox(
-        height: widget.styles.currencyWidgetHeight() + 1,
-        width: 100,
-          child: Center(
-            child: SfCartesianChart(
-              onChartTouchInteractionUp: (d) {
-                widget.onGraphicPressed!();
-              },
-              plotAreaBorderWidth: 0,
-              primaryXAxis: DateTimeAxis(
-                  maximum: DateTime.now() ,
-                  minimum: DateTime.now().subtract(Duration(minutes: 1)),
-                  isVisible: false
-              ),
-              primaryYAxis: NumericAxis(
-                  maximum: prevYmax == null ? 0 : prevYmax! + prevYmax! * 0.000001,
-                  minimum: prevYmin == null ? 0 : prevYmin! - prevYmin! * 0.000001,
-                  isVisible: false,
-              ),
-              series: <LineSeries<GraphicPrice, DateTime>>[
-                LineSeries<GraphicPrice, DateTime>(
-                  dataSource: dashedLine,
-                  dashArray: <double>[3.5,3.5],
-                  color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
-                  xValueMapper: (GraphicPrice sales, _) => sales.time,
-                  yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
-                    animationDuration: 0
-
-                ),
-                LineSeries<GraphicPrice, DateTime>(
-                  dataSource: widget.chartData,
-                  color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
-                  xValueMapper: (GraphicPrice sales, _) => sales.time,
-                  yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
-                  animationDuration: 0
-                ),
-
-              ]),
-          ),
-      ),
-    );
-  }
+  // Widget _buildLiveLineChart() {
+  //   return Center(
+  //     child: SizedBox(
+  //       height: widget.styles.currencyWidgetHeight() + 1,
+  //       width: 100,
+  //         child: Center(
+  //           child: SfCartesianChart(
+  //             onChartTouchInteractionUp: (d) {
+  //               widget.onGraphicPressed!();
+  //             },
+  //             plotAreaBorderWidth: 0,
+  //             primaryXAxis: DateTimeAxis(
+  //                 maximum: DateTime.now() ,
+  //                 minimum: DateTime.now().subtract(Duration(minutes: 1)),
+  //                 isVisible: false
+  //             ),
+  //             primaryYAxis: NumericAxis(
+  //                 maximum: prevYmax == null ? 0 : prevYmax! + prevYmax! * 0.000001,
+  //                 minimum: prevYmin == null ? 0 : prevYmin! - prevYmin! * 0.000001,
+  //                 isVisible: false,
+  //             ),
+  //             series: <LineSeries<GraphicPrice, DateTime>>[
+  //               LineSeries<GraphicPrice, DateTime>(
+  //                 dataSource: dashedLine,
+  //                 dashArray: <double>[3.5,3.5],
+  //                 color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+  //                 xValueMapper: (GraphicPrice sales, _) => sales.time,
+  //                 yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+  //                   animationDuration: 0
+  //
+  //               ),
+  //               LineSeries<GraphicPrice, DateTime>(
+  //                 dataSource: widget.chartData,
+  //                 color: double.parse(widget.percent!) > 0 ? Colors.green : Colors.red,
+  //                 xValueMapper: (GraphicPrice sales, _) => sales.time,
+  //                 yValueMapper: (GraphicPrice sales, _) => double.parse(sales.price),
+  //                 animationDuration: 0
+  //               ),
+  //
+  //             ]),
+  //         ),
+  //     ),
+  //   );
+  // }
 
   @override
   void dispose() {
