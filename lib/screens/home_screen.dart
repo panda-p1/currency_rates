@@ -292,7 +292,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               ),
               children: [
                 SlidableAction(
-                  onPressed: (s) {},
+                  onPressed: (s) {
+                    _removePair(key);
+                  },
                   backgroundColor: Color(0xFFFE4A49),
                   label: 'Remove',
                 ),
