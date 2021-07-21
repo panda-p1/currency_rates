@@ -15,11 +15,11 @@ class LayoutStyles {
 }
 
 class PortraitStyles extends CurrencyStyles {
-  double currencyNameFontSize() => 18;
-  double currencyPriceFontSize() => 20;
+  double currencyNameFontSize() => 16;
+  double currencyPriceFontSize() => 15;
   Color currencyNameFontColor() => Colors.grey[600]!;
   double currencyWidgetHeight() => 82;
-  double currencyPriceWidth() => 146;
+  double currencyPriceWidth() => 130;
 }
 
 class LandscapeStyles extends CurrencyStyles {

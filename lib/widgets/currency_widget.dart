@@ -13,17 +13,14 @@ class CurrencyWidget extends StatefulWidget {
   final String? currencyName;
   final String currencyPrice;
   final CurrencyStyles styles;
-  final bool? deleteIcon;
-  final String? oldPrice;
-  final Function? onDeleteIconPress;
+  final String oldPrice;
   final String? percent;
 
   final Function? onGraphicPressed;
   final List<GraphicPrice> chartData;
 
   CurrencyWidget({Key? key,
-    this.oldPrice, required this.onGraphicPressed,
-    this.deleteIcon, this.onDeleteIconPress,
+    required this.oldPrice, required this.onGraphicPressed,
     this.currencyName, this.percent,
     required this.currencyPrice, required this.chartData,
     required this.styles}) : super(key: key);
@@ -43,14 +40,19 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   //Initialize the data source
   @override
   void initState() {
-    if(widget.chartData.isNotEmpty) {
-      prevYmin = double.parse(widget.oldPrice!)
+    _initGraphic();
+    super.initState();
+  }
+
+  void _initGraphic() {
+    if(widget.chartData.isNotEmpty ) {
+      prevYmin = double.parse(widget.oldPrice)
           - (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
-              - double.parse(widget.oldPrice!)
+              - double.parse(widget.oldPrice)
           ).abs();
-      prevYmax = double.parse(widget.oldPrice!)
+      prevYmax = double.parse(widget.oldPrice)
           + (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
-              -double.parse(widget.oldPrice!)
+              -double.parse(widget.oldPrice)
           ).abs();
     }
 
@@ -60,37 +62,30 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     _reloadTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       dashedLine = [];
       for(var i = 0; i < 21; i++) {
-        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
       }
       // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
       dashedLine = [];
       for(var i = 0; i < 21; i++) {
-        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
       }
       // if(chartData.length == 70) {
       //   chartData.removeAt(0);
       // }
-      if(widget.chartData.isNotEmpty) {
-        final yMax = double.parse(widget.oldPrice!) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-        final yMin = double.parse(widget.oldPrice!) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice!)).abs();
-        if(prevYmax! < yMax) {
-          prevYmax = yMax;
-        }
-        if(prevYmin! > yMin) {
-          prevYmin = yMin;
-        }
+      // if(widget.chartData.isNotEmpty) {
+        final yMax = double.parse(widget.oldPrice) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice)).abs();
+        final yMin = double.parse(widget.oldPrice) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice)).abs();
+        prevYmax = yMax;
+        prevYmin = yMin;
         setState(() {});
-      }
+      // }
 
     });
     for(var i = 0; i < 21; i++) {
-      dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice!, close: widget.oldPrice!));
+      dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
     }
     // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
-
-    super.initState();
   }
-
   Widget _buildLiveLineChart() {
     return Center(
       child: SizedBox(
@@ -108,8 +103,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
                   isVisible: false
               ),
               primaryYAxis: NumericAxis(
-                  maximum: prevYmax! + prevYmax! * 0.000001,
-                  minimum: prevYmin! - prevYmin! * 0.000001,
+                  maximum: prevYmax == null ? 0 : prevYmax! + prevYmax! * 0.000001,
+                  minimum: prevYmin ==null ? 0: prevYmin! - prevYmin! * 0.000001,
                   isVisible: false,
               ),
               series: <LineSeries<GraphicPrice, DateTime>>[
@@ -174,6 +169,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       height: widget.styles.currencyWidgetHeight() + 5,
 
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Padding(
             padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
@@ -199,28 +196,13 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
     if(widget.currencyName == null) {
       return Container();
     }
-    return Stack(
-      clipBehavior: Clip.none, children: [
-      Row(
-        // crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            widget.currencyName!,
-            style: TextStyle(
-                fontSize: widget.styles.currencyNameFontSize(),
-                color: widget.styles.currencyNameFontColor()),),
-
-        ],
-      ),
-      // if(widget.deleteIcon != null && widget.deleteIcon!)
-      //   Positioned(
-      //       right: -20,
-      //       top: -15,
-      //       child: IconButton(
-      //         icon: Icon(Icons.remove_circle_sharp, color: Colors.red, size: 30),
-      //         onPressed: () => widget.onDeleteIconPress!(),))
-    ],
+    return Center(
+      child:
+            Text(
+              widget.currencyName!,
+              style: TextStyle(
+                  fontSize: widget.styles.currencyNameFontSize(),
+                  color: widget.styles.currencyNameFontColor()),),
     );
   }
   Widget _currencyPrice() {
