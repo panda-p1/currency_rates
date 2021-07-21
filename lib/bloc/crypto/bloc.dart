@@ -62,7 +62,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       yield CryptoEmptyState();
     }
     if(event is ConfirmedRemovePair) {
-      yield CryptoEmptyState();
+      // yield CryptoEmptyState();
 
       final pair = event.pair;
       localDataProvider.removePair(pair);

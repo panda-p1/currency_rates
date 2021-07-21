@@ -76,7 +76,6 @@ class NotificationController {
   Map<String, WebSocket> channels = {};
 
   Map<String, StreamController<Crypto?>> reorderPair(int newIdx, String pair) {
-    print(streamControllers.keys);
     final List<MapEntry<String, StreamController<Crypto?>>> list = [];
     streamControllers.forEach((k,v) => list.add(MapEntry(k,v)));
     final oldIndex = streamControllers.keys.toList().indexOf(pair);
@@ -97,7 +96,9 @@ class NotificationController {
   }
 
   addStreamCtrl(String pair) {
-    streamControllers[pair] =  StreamController.broadcast(sync: true);
+    print('addStreamCtrl');
+    print(pair);
+    streamControllers[pair] = StreamController.broadcast(sync: true);
   }
 
   closeAllConnections() {
@@ -111,6 +112,7 @@ class NotificationController {
     _addToBeginningOfObj(pair);
     addStreamCtrl(pair);
     channels.addEntries([MapEntry(pair, await connectWs(pair))]);
+
     _addListener(pair);
   }
 
@@ -119,7 +121,9 @@ class NotificationController {
   }
 
   _onDoneChannel(String pair) {
-    streamControllers[pair]!.addError(ClosedCrypto());
+    print('streamControllers onDone');
+    print(streamControllers.keys);
+    // streamControllers[pair]!.addError(ClosedCrypto());
 
     // if(channels[pair] != null) {
     //   if(channels[pair]!.closeCode == 1002) {
@@ -128,15 +132,16 @@ class NotificationController {
     // }
     //
     channels.remove(pair);
+    streamControllers.remove(pair);
+
     //
     // for (var chain in currencyChains[pair]!) {
     //   obj.remove(chain);
     // }
   }
   _addListener(String pair) {
-    print('add listener');
-    print('pair');
     print(pair);
+    print(streamControllers);
     channels[pair]!.listen((streamData) {
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       obj[crypto.name] = crypto;

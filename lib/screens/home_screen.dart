@@ -19,20 +19,16 @@ import 'package:currencies_pages/bloc/currency/bloc.dart';
 import 'package:currencies_pages/bloc/currency/events.dart';
 import 'package:currencies_pages/bloc/currency/states.dart';
 import 'package:currencies_pages/bloc/localData/bloc.dart';
-import 'package:currencies_pages/bloc/localData/events.dart';
 import 'package:currencies_pages/model/crypto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../constants.dart';
 import '../styles.dart';
-import '../tools.dart';
 import 'add_ticker_screen.dart';
-import 'config_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -47,6 +43,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   Map<String, List<GraphicPrice>> chartData = {};
 
+  bool firstLaunch = true;
+
   var itemsLength = 0;
 
   bool _isInForeground = true;
@@ -56,12 +54,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   Timer? retryConnectionTimer;
 
   Map<String, String> previousCurrencies = {};
-  double _signalHeight = heightForSignal;
+
+  Map<String, String> lastCurrencies = {};
+
 
   Map<String,ValueNotifier<Crypto?>> streamsNotifiers = {};
-  final ValueNotifier<Map<String, int>> orderListener = ValueNotifier<Map<String, int>>({});
 
-  final ValueNotifier<double> _topLoaderHeight = ValueNotifier<double>(0);
+  final ValueNotifier<Map<String, int>> orderListener = ValueNotifier<Map<String, int>>({});
 
   final ValueNotifier<Orientation> orientationUI = ValueNotifier<Orientation>(Orientation.portrait);
 
@@ -127,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         ),
         body: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onVerticalDragUpdate: _onVerticalDragUpdate,
-            child: _body()),
+            child: _body()
+        ),
     );
   }
 
@@ -138,15 +137,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           orientationUI.value = orientation;
           return Column(
             children: [
-              // topLoading
-              //     ? Padding(
-              //         padding: const EdgeInsets.symmetric(vertical: 16.0),
-              //         child: CircularProgressIndicator(),)
-              //     : ValueListenableBuilder<double>(
-              //         builder: (context, double value, child) {
-              //           return SizedBox(height: value);
-              //         }, valueListenable: _topLoaderHeight,
-              //     ),
               BlocBuilder<CryptoBloc, CryptoState>(builder: (BuildContext context, CryptoState state) {
                   if(state is CryptoClosingState) {
                     return Stack(
@@ -161,9 +151,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                       ],
                     );
                   }
-                  // if(state is CryptoModal) {
-                  //   Future.delayed(Duration.zero, () => _showConfirmDialog(state.confirmationDetails));
-                  // }
                   return Container();
                 }, buildWhen: (state1, state2) => state2 is CryptoModal || state2 is CryptoEmptyState || state2 is CryptoClosingState,
               ),
@@ -195,9 +182,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return Container();
       }
       if(state is CryptoLoading) {
-        return Loader(
-          styles: PortraitStyles(),
-          );
+        print('firstLaunch');
+        print(firstLaunch);
+        if(firstLaunch) {
+          return Loader(styles: PortraitStyles(),);
+        } else {
+          if(streamsNotifiers.isEmpty) {
+            print(previousCurrencies);
+            print(lastCurrencies);
+            streamsNotifiers = cryptoController.map((key, value) {
+              print(key);
+              return MapEntry(key, ValueNotifier(Crypto(price: lastCurrencies[key]!, name: key, queryName: key, )));
+            });
+          }
+
+          return _cryptoLoaded(cryptoController);
+        }
       }
       if(state is LocalCryptoLoaded) {
         retryConnectionTimer = Timer(Duration(seconds: 2), () {
@@ -207,14 +207,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         return _localCryptoLoaded(state.currencies);
       }
       if(state is CryptoLoaded) {
-        print('state is cryptoLoaded');
-        streamsNotifiers = state.streamControllers.map((key, value) {
-          return MapEntry(key, ValueNotifier<Crypto?>(null));
-        });
+        print('THERE');
+        print('${streamsNotifiers.keys.length} ${state.streamControllers.keys.length}');
+        if(streamsNotifiers.keys.length != state.streamControllers.keys.length) {
+          streamsNotifiers = state.streamControllers.map((key, value) {
+            return MapEntry(key, ValueNotifier<Crypto?>(null));
+          });
+        }
+
         streamsNotifiers.forEach((key, value) {
           orderListener.value[key] = streamsNotifiers.keys.toList().indexOf(key);
         });
-        return SingleChildScrollView(child: _cryptoLoaded(state.streamControllers));
+        return _cryptoLoaded(state.streamControllers);
       }
       if(state is CryptoEmpty) {
         return _banner();
@@ -253,67 +257,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             return Container();
           }),
     );
-    // return SizedBox(
-    //   height: LayoutStyles.footerHeight - 2 * LayoutStyles.footerPadding,
-    //   child: Padding(
-    //     padding: EdgeInsets.symmetric(vertical: LayoutStyles.footerPadding),
-    //     // padding: EdgeInsets.zero,
-    //     child: Row(
-    //       crossAxisAlignment: CrossAxisAlignment.center,
-    //       mainAxisAlignment: MainAxisAlignment.center,
-    //       children: [
-    //         Padding(
-    //           padding: const EdgeInsets.only(left: 16),
-    //           child:
-    //           Text(succeedTime, style: TextStyle(fontSize: SucceedDatetime.fontSize)),
-    //         ),
-    //
-    //         Spacer(),
-    //
-    //         AnimatedBuilder(
-    //           animation: animation,
-    //           builder: (_, snapshot) {
-    //             return Padding(
-    //               padding: const EdgeInsets.only(right: 16.0),
-    //               child: CustomPaint(
-    //                 painter: status1 != Statuses.offline
-    //                     ? Painter(sweepAngle: animation.value, color: animation1.value == null ? Colors.green : animation1.value!, status: status1)
-    //                     : Painter(sweepAngle: Utils.degToRad(20670), color: Colors.red, status: status1),
-    //                 size: Size(RingStyles.ringSize,RingStyles.ringSize),
-    //               ),
-    //             );
-    //           },
-    //         ),
-    //
-    //         TextButton(
-    //           onPressed: () async {
-    //             isEditingMode.value = false;
-    //             // await Navigator.push(context, MaterialPageRoute(builder: (context) =>
-    //             //     BlocProvider(
-    //             //       create: (BuildContext context) => LocalDataBloc(localDataRepo: LocalDataProvider()),
-    //             //       child: AddTickerScreen(),
-    //             //     ),
-    //             // ));
-    //             await Navigator.push(context, MaterialPageRoute(builder: (context) =>
-    //                 MultiBlocProvider(
-    //                   providers: [
-    //                     BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
-    //                     BlocProvider.value(value: BlocProvider.of<LocalDataBloc>(context),)
-    //                     // BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
-    //                   ],
-    //                   child: AddTickerScreen(),)
-    //             ));
-    //             context.read<CryptoBloc>().add(CheckIfObjIsEmpty());
-    //           },
-    //            child: Padding(
-    //              padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 8 : 36),
-    //              child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
-    //            ),
-    //         )
-    //       ],
-    //     ),
-    //   ),
-    // );
   }
 
   Widget Function(CurrencyStyles styles)
@@ -322,43 +265,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       return _listenableCurrencyWidget(styles: styles, crypto: crypto);
     };
   }
-
-  // Future<bool> _showConfirmDialog(String confirmationDetails) async {
-  //   controller.stop();
-  //   final d = confirmationDetails;
-  //   await showDialog<void>(
-  //     context: context,
-  //     barrierDismissible: false, // user must tap button!
-  //     builder: (BuildContext alertContext) {
-  //       return AlertDialog(
-  //         title: Text(d.length > 1 ? 'Warning' : 'Confirmation'),
-  //         content: Text(
-  //             d.length > 1
-  //                 ? 'Are you sure want to delete $d pair?'
-  //                 : 'Are you sure want to delete this pair?'),
-  //         actions: <Widget>[
-  //           TextButton(
-  //             child: const Text('no'),
-  //             onPressed: () {
-  //               Navigator.pop(alertContext);
-  //               context.read<CryptoBloc>().add(NotConfirmedRemovePair());
-  //               controller.forward();
-  //             },
-  //           ),
-  //           TextButton(
-  //             child: const Text('confirm'),
-  //             onPressed: () {
-  //               Navigator.pop(alertContext);
-  //               context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: d));
-  //               controller.forward();
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  //   return false;
-  // }
 
   Widget _banner() {
     return Container(
@@ -371,8 +277,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   _wrapItems(Map<String, ValueListenableBuilder<Crypto?>> renderItems, Map<String, int> order) {
-    return ReorderableWrap(
+    return ReorderableListView(
+        buildDefaultDragHandles: false,
+        shrinkWrap: true,
+        children: order.keys.toList().map((key) {
+          final item = Slidable(
+            key: ValueKey(order[key]), // A key is necessary.
 
+            endActionPane: ActionPane(
+              extentRatio: 0.3,
+              motion: BehindMotion(),
+              dismissible: DismissiblePane(
+                onDismissed: () {
+                  _removePair(key);
+                },
+              ),
+              children: [
+                SlidableAction(
+                  onPressed: (s) {},
+                  backgroundColor: Color(0xFFFE4A49),
+                  label: 'Remove',
+                ),
+
+              ],
+            ),
+            child: renderItems[key] == null ? Container() : renderItems[key]!,
+
+          );
+          return item;
+        }).toList(),
+
+        onReorder: (oldIdx, newIdx) {
+          if(newIdx > oldIdx) newIdx -= 1;
+          final old = orderListener.value;
+          final List<MapEntry<String, int>> list = [];
+          old.forEach((k,v) => list.add(MapEntry(k,v)));
+          final item = list.removeAt(oldIdx);
+          list.insert(newIdx, MapEntry(item.key, item.value));
+          final Map<String, int> newObj = {};
+          newObj.addEntries(list);
+          orderListener.value = {...newObj};
+        }
+    );
+    return ReorderableWrap(
       onReorder: (oldIdx, newIdx) {
         final old = orderListener.value;
         final List<MapEntry<String, int>> list = [];
@@ -404,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
               ],
             ),
-            child: renderItems[key]!,
+            child: renderItems[key] == null ? Container() : renderItems[key]!,
 
           );
           return item;
@@ -420,6 +367,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       }
     });
     orderListener.value = newObj;
+    streamsNotifiers.remove(pair);
     context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: pair));
 
   }
@@ -431,12 +379,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       return StreamBuilder<Crypto?>(
           stream: e.stream,
           builder: (_, snapshot) {
+
             if(snapshot.hasError) {
               if(snapshot.error is ClosedCrypto) {
                 return Container();
               }
             }
             if(!snapshot.hasData) {
+              if(!firstLaunch) {
+                return Container();
+              }
               return Container();
             }
             final crypto = snapshot.data!;
@@ -465,6 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         ValueListenableBuilder<Crypto?>(
             valueListenable: streamsNotifiers[key]!,
             builder: (_, crypto, __) {
+              print(crypto);
               if(crypto == null) {
                 return _loaderWrapper(key);
               }
@@ -472,18 +425,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             })
       );
     });
-    return Column(
-      children: [
-        // wrap,
-        ValueListenableBuilder<Map<String, int>>(
-            valueListenable: orderListener,
-            builder: (_, order, __) {
-              return _wrapItems(renderItems, order);
-            }),
-        Column(
-          children: items,
-        )
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // wrap,
+          ValueListenableBuilder<Map<String, int>>(
+              valueListenable: orderListener,
+              builder: (_, order, __) {
+                return _wrapItems(renderItems, order);
+              }),
+          Column(
+            children: items,
+          )
+        ],
+      ),
     );
   }
 
@@ -519,35 +474,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           child: CurrencyGraphic(crypto: crypto, streamController: cryptoController[crypto.name]!,),
         )
     ));
+    return InkWell(
+      onTap: navigate,
+
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ValueListenableBuilder<bool>(
+          valueListenable: isEditingMode,
+          builder: (_, mode, __) {
+            if(mode) return IconButton(
+                padding: EdgeInsets.only(left: 8),
+                constraints: BoxConstraints(),
+                splashRadius: 5,
+                onPressed: () => _onDeletePair(crypto.name),
+                icon: Icon(Icons.remove_circle_sharp, color: Colors.red,));
+            return Container();
+          }),
+
+          Expanded(
+            child: CurrencyWidget(
+              chartData: chartData[crypto.name]!,
+              onGraphicPressed: navigate,
+              oldPrice: previousCurrencies[crypto.name] == null ? lastCurrencies[crypto.name]! : previousCurrencies[crypto.name]!,
+              percent: crypto.changePercent,
+              styles: styles,
+              currencyPrice: crypto.price,
+              currencyName: crypto.name,
+            ),
+          ),
+          ValueListenableBuilder<bool>(
+              valueListenable: isEditingMode,
+              builder: (_, mode, __) {
+                if(mode) return ReorderableDragStartListener(
+                    index: orderListener.value.keys.toList().indexOf(crypto.name),
+                    child: IconButton(
+                        splashRadius: 20,
+                        onPressed: () {},
+                        icon: Icon(Icons.format_align_justify_outlined )
+                    )
+                );
+                return Container();
+              }),
+        ],
+      ),
+    );
+
     return ValueListenableBuilder<bool>(
       valueListenable: isEditingMode,
       builder: (_, mode, __) {
-        return InkWell(
-          onTap: !mode ? navigate : null,
-
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if(mode) IconButton(onPressed: () => _onDeletePair(crypto.name), icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
-
-              Expanded(
-                child: CurrencyWidget(
-                    chartData: chartData[crypto.name]!,
-                    onGraphicPressed: !mode ? navigate : null,
-                    oldPrice: previousCurrencies[crypto.name]!,
-                    percent: crypto.changePercent,
-                    styles: styles,
-                    currencyPrice: crypto.price,
-                    currencyName: crypto.name,
-                    deleteIcon: mode,
-                    onDeleteIconPress: () => _onDeletePair(crypto.name)
-                ),
-              ),
-
-            ],
-          ),
-        );
       }
     );
   }
@@ -586,6 +562,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 valueListenable: isEditingMode,
                 builder: (_, mode, __) {
                   if(mode) {
+
                     final wrap = ReorderableWrap(
                       onReorder: (oldIdx, newIdx) {
                         final pair = currencies.keys.toList()[oldIdx];
@@ -626,11 +603,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  void _onVerticalDragUpdate(DragUpdateDetails d) {
-    if(_topLoaderHeight.value + d.delta.dy > 0) {
-      _topLoaderHeight.value += d.delta.dy;
-    }
-  }
   @override
   void dispose() {
     if(retryConnectionTimer != null) retryConnectionTimer!.cancel();
@@ -642,11 +614,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    firstLaunch = false;
 
     if(state == AppLifecycleState.resumed) {
+      lastCurrencies = Map.from(previousCurrencies);
+      previousCurrencies = {};
       context.read<CryptoBloc>().add(CryptoInitConnection());
     } else {
-      previousCurrencies = {};
+      chartData.keys.toList().forEach((element) {
+        chartData[element] = [];
+      });
+
+
       context.read<CryptoBloc>().add(CryptoCloseAllConnections());
     }
     setState(() {
