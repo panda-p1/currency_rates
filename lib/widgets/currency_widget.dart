@@ -72,14 +72,28 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
       // if(chartData.length == 70) {
       //   chartData.removeAt(0);
       // }
-      // if(widget.chartData.isNotEmpty) {
-        final yMax = double.parse(widget.oldPrice) + (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice)).abs();
-        final yMin = double.parse(widget.oldPrice) - (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice)).abs();
+      if(widget.chartData.isNotEmpty) {
+        final yMax = double.parse(widget.oldPrice) +
+            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+                .abs();
+        final yMin = double.parse(widget.oldPrice) -
+            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+                .abs();
         prevYmax = yMax;
         prevYmin = yMin;
         setState(() {});
-      // }
-
+      } else {
+        // final price =
+        final yMax = double.parse(widget.oldPrice) +
+            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+                .abs();
+        final yMin = double.parse(widget.oldPrice) -
+            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+                .abs();
+        prevYmax = yMax;
+        prevYmin = yMin;
+        setState(() {});
+      }
     });
     for(var i = 0; i < 21; i++) {
       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
@@ -104,7 +118,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
               ),
               primaryYAxis: NumericAxis(
                   maximum: prevYmax == null ? 0 : prevYmax! + prevYmax! * 0.000001,
-                  minimum: prevYmin ==null ? 0: prevYmin! - prevYmin! * 0.000001,
+                  minimum: prevYmin == null ? 0 : prevYmin! - prevYmin! * 0.000001,
                   isVisible: false,
               ),
               series: <LineSeries<GraphicPrice, DateTime>>[

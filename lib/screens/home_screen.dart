@@ -292,7 +292,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               ),
               children: [
                 SlidableAction(
-                  onPressed: (s) {},
+                  onPressed: (s) {
+                    _removePair(key);
+                  },
                   backgroundColor: Color(0xFFFE4A49),
                   label: 'Remove',
                 ),
@@ -404,7 +406,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               previousCurrencies[crypto.name] = crypto.price;
             }
             Future.delayed(Duration.zero, () {
-              streamsNotifiers[crypto.name]!.value = crypto;
+              if(streamsNotifiers[crypto.name] != null) {
+                streamsNotifiers[crypto.name]!.value = crypto;
+              }
             });
             return Container();
       });
