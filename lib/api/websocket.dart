@@ -96,14 +96,12 @@ class NotificationController {
   }
 
   addStreamCtrl(String pair) {
-    print('addStreamCtrl');
-    print(pair);
     streamControllers[pair] = StreamController.broadcast(sync: true);
   }
 
   closeAllConnections() {
     for(var i = 0; i < channels.length; i++) {
-      channels.values.toList()[i].close();
+      confirmedCloseConnection(channels.keys.toList()[i]);
     }
   }
 
@@ -121,8 +119,6 @@ class NotificationController {
   }
 
   _onDoneChannel(String pair) {
-    print('streamControllers onDone');
-    print(streamControllers.keys);
     // streamControllers[pair]!.addError(ClosedCrypto());
 
     // if(channels[pair] != null) {

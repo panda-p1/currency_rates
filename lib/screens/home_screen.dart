@@ -9,6 +9,7 @@ import 'package:currencies_pages/widgets/bottom_circle_loader.dart';
 import 'package:currencies_pages/widgets/crypto_loader.dart';
 import 'package:currencies_pages/widgets/currency_widget.dart';
 import 'package:currencies_pages/widgets/scroll_notification_listener.dart';
+import 'package:flutter_reorderable_list/flutter_reorderable_list.dart' as Listss;
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 import 'package:reorderables/reorderables.dart';
@@ -202,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           context.read<CryptoBloc>().add(RetryConnection());
         });
 
-        return _localCryptoLoaded(state.currencies);
+        // return _localCryptoLoaded(state.currencies);
       }
       if(state is CryptoLoaded) {
         print('THERE');
@@ -273,11 +274,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         )
     );
   }
-
+  int _indexOfKey(Key key) {
+    return orderListener.value.keys.toList().indexWhere((w) => Key(w.hashCode.toString()) == key);
+  }
   _wrapItems(Map<String, Widget> renderItems, Map<String, int> order) {
     if(order.length == 0) {
       return _banner();
     }
+    // return List.ReorderableList(
+    //   child: ListView.separated(
+    //       itemBuilder: (_, idx) {
+    //               final key = order.keys.toList()[idx];
+    //               final item = Slidable(
+    //                 key: ValueKey(order[key]), // A key is necessary.
+    //
+    //                 endActionPane: ActionPane(
+    //                   extentRatio: 0.3,
+    //                   motion: BehindMotion(),
+    //                   dismissible: DismissiblePane(
+    //                     onDismissed: () {
+    //                       _removePair(key);
+    //                     },
+    //                   ),
+    //                   children: [
+    //                     SlidableAction(
+    //                       onPressed: (s) {
+    //                         _removePair(key);
+    //                       },
+    //                       backgroundColor: Color(0xFFFE4A49),
+    //                       label: 'Remove',
+    //                     ),
+    //
+    //                   ],
+    //                 ),
+    //                 child: renderItems[key] == null ? Container() : renderItems[key]!,
+    //
+    //               );
+    //               return item;
+    //       },
+    //       separatorBuilder: () {
+    //
+    //       },
+    //       itemCount: renderItems.length),
+    //   onReorder: (oldIx, newIx) {
+    //     oldIdx = _indexOfKey(oldIx);
+    //     newIdx = _indexOfKey(newIdx);
+    //     if(newIdx > oldIdx) newIdx -= 1;
+    //     final old = orderListener.value;
+    //     final List<MapEntry<String, int>> list = [];
+    //     old.forEach((k,v) => list.add(MapEntry(k,v)));
+    //     final item = list.removeAt(oldIdx);
+    //     list.insert(newIdx, MapEntry(item.key, item.value));
+    //     final Map<String, int> newObj = {};
+    //     newObj.addEntries(list);
+    //     orderListener.value = {...newObj};
+    //   }
+    // );
     return ReorderableListView(
         buildDefaultDragHandles: false,
         shrinkWrap: true,
@@ -320,46 +372,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           final Map<String, int> newObj = {};
           newObj.addEntries(list);
           orderListener.value = {...newObj};
-        }
+        },
     );
-    return ReorderableWrap(
-      onReorder: (oldIdx, newIdx) {
-        final old = orderListener.value;
-        final List<MapEntry<String, int>> list = [];
-        old.forEach((k,v) => list.add(MapEntry(k,v)));
-        final item = list.removeAt(oldIdx);
-        list.insert(newIdx, MapEntry(item.key, item.value));
-        final Map<String, int> newObj = {};
-        newObj.addEntries(list);
-        orderListener.value = {...newObj};
-      },
-      children: order.keys.toList().map((key) {
-          final item = Slidable(
-            key: ValueKey(order[key]), // A key is necessary.
-
-            endActionPane: ActionPane(
-              extentRatio: 0.3,
-              motion: BehindMotion(),
-              dismissible: DismissiblePane(
-                onDismissed: () {
-                  _removePair(key);
-                },
-              ),
-              children: [
-                SlidableAction(
-                  onPressed: (s) {},
-                  backgroundColor: Color(0xFFFE4A49),
-                  label: 'Remove',
-                ),
-
-              ],
-            ),
-            child: renderItems[key] == null ? Container() : renderItems[key]!,
-
-          );
-          return item;
-      }
-  ).toList());
   }
 
   void _removePair(String pair) {
@@ -370,12 +384,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       }
     });
     orderListener.value = newObj;
+
+    cryptoController.remove(pair);
+    context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: pair));
     streamsNotifiers.remove(pair);
     lastCurrencies.remove(pair);
     previousCurrencies.remove(pair);
-
-    //mmfd
-    context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: pair));
 
   }
 
@@ -489,46 +503,53 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     ));
     return InkWell(
       onTap: navigate,
-
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
         children: [
-          ValueListenableBuilder<bool>(
-          valueListenable: isEditingMode,
-          builder: (_, mode, __) {
-            if(mode) return IconButton(
-                padding: EdgeInsets.only(left: 8),
-                constraints: BoxConstraints(),
-                splashRadius: 5,
-                onPressed: () => _onDeletePair(crypto.name),
-                icon: Icon(Icons.remove_circle_sharp, color: Colors.red,));
-            return Container();
-          }),
-
-          Expanded(
-            child: CurrencyWidget(
-              onGraphicPressed: navigate,
-              oldPrice: previousCurrencies[crypto.name] == null ? lastCurrencies[crypto.name]! : previousCurrencies[crypto.name]!,
-              percent: crypto.changePercent,
-              styles: styles,
-              currencyPrice: crypto.price,
-              currencyName: crypto.name,
-            ),
-          ),
-          ValueListenableBuilder<bool>(
+          // if(cryptoController.keys.toList()[0] != crypto.name)
+            // Divider(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ValueListenableBuilder<bool>(
               valueListenable: isEditingMode,
               builder: (_, mode, __) {
-                if(mode) return ReorderableDragStartListener(
-                    index: orderListener.value.keys.toList().indexOf(crypto.name),
-                    child: IconButton(
-                        splashRadius: 20,
-                        onPressed: () {},
-                        icon: Icon(Icons.format_align_justify_outlined )
-                    )
-                );
+                if(mode) return IconButton(
+                    padding: EdgeInsets.only(left: 8),
+                    constraints: BoxConstraints(),
+                    splashRadius: 5,
+                    onPressed: () => _onDeletePair(crypto.name),
+                    icon: Icon(Icons.remove_circle_sharp, color: Colors.red,));
                 return Container();
               }),
+
+              Expanded(
+                child: CurrencyWidget(
+                  onGraphicPressed: navigate,
+                  oldPrice: previousCurrencies[crypto.name] == null ? lastCurrencies[crypto.name]! : previousCurrencies[crypto.name]!,
+                  percent: crypto.changePercent,
+                  styles: styles,
+                  currencyPrice: crypto.price,
+                  currencyName: crypto.name,
+                ),
+              ),
+              ValueListenableBuilder<bool>(
+                  valueListenable: isEditingMode,
+                  builder: (_, mode, __) {
+                    if(mode) return ReorderableDragStartListener(
+                        index: orderListener.value.keys.toList().indexOf(crypto.name),
+                        child: IconButton(
+                            splashRadius: 20,
+                            onPressed: () {},
+                            icon: Icon(Icons.format_align_justify_outlined )
+                        )
+                    );
+                    return Container();
+                  }),
+            ],
+          ),
+          // if(cryptoController.keys.toList()[cryptoController.keys.toList().length - 1] != crypto.name)
+          //   Divider(),
         ],
       ),
     );
@@ -553,67 +574,67 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  Widget _localCryptoLoaded(Map<String, Crypto?> currencies) {
-    final items = currencies.values.map((crypto) {
-      if(crypto == null) {
-        return null;
-      }
-      return _orientatedCurrencyWidget(crypto: crypto);
-    }).toList();
-
-
-    return ValueListenableBuilder<Orientation>(
-        valueListenable: orientationUI,
-        builder: (_, orientation, __) {
-          final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
-          final styledItems = items.where((element) => element!=null).map<Widget>((e) {
-            return e!(styles);
-          }).toList();
-          if(orientation == Orientation.portrait) {
-            return ValueListenableBuilder<bool>(
-                valueListenable: isEditingMode,
-                builder: (_, mode, __) {
-                  if(mode) {
-
-                    final wrap = ReorderableWrap(
-                      onReorder: (oldIdx, newIdx) {
-                        final pair = currencies.keys.toList()[oldIdx];
-                        context.read<CryptoBloc>().add(LocalReorderPair(newIdx: newIdx, pair: pair));
-                      },
-                      children: styledItems,
-                    );
-                    return SingleChildScrollView(child: wrap,);
-                  }
-                  return SingleChildScrollView(
-                      child: Column(
-                          children: styledItems
-                      )
-                  );
-                });
-          }
-          if(orientation == Orientation.landscape) {
-            if(itemsLength != items.length) { // FIXED BUG line 110 pos 12: flutter: '_positions.isNotEmpty
-              itemsLength = items.length;
-              // key = UniqueKey();
-            }
-            return SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
-              child: Swiper(
-                  pagination: const SwiperPagination(
-                    alignment: Alignment.bottomCenter,
-                    builder: DotSwiperPaginationBuilder(
-                      color: Colors.grey,
-                    ),
-                  ),
-                  itemCount: styledItems.length,
-                  itemBuilder: (BuildContext context, int index) => styledItems[index])
-            );
-          }
-            return Container();
-      },
-    );
-  }
+  // Widget _localCryptoLoaded(Map<String, Crypto?> currencies) {
+  //   final items = currencies.values.map((crypto) {
+  //     if(crypto == null) {
+  //       return null;
+  //     }
+  //     return _orientatedCurrencyWidget(crypto: crypto);
+  //   }).toList();
+  //
+  //
+  //   return ValueListenableBuilder<Orientation>(
+  //       valueListenable: orientationUI,
+  //       builder: (_, orientation, __) {
+  //         final styles = orientation == Orientation.portrait ? PortraitStyles() : LandscapeStyles();
+  //         final styledItems = items.where((element) => element!=null).map<Widget>((e) {
+  //           return e!(styles);
+  //         }).toList();
+  //         if(orientation == Orientation.portrait) {
+  //           return ValueListenableBuilder<bool>(
+  //               valueListenable: isEditingMode,
+  //               builder: (_, mode, __) {
+  //                 if(mode) {
+  //
+  //                   final wrap = ReorderableWrap(
+  //                     onReorder: (oldIdx, newIdx) {
+  //                       final pair = currencies.keys.toList()[oldIdx];
+  //                       context.read<CryptoBloc>().add(LocalReorderPair(newIdx: newIdx, pair: pair));
+  //                     },
+  //                     children: styledItems,
+  //                   );
+  //                   return SingleChildScrollView(child: wrap,);
+  //                 }
+  //                 return SingleChildScrollView(
+  //                     child: Column(
+  //                         children: styledItems
+  //                     )
+  //                 );
+  //               });
+  //         }
+  //         if(orientation == Orientation.landscape) {
+  //           if(itemsLength != items.length) { // FIXED BUG line 110 pos 12: flutter: '_positions.isNotEmpty
+  //             itemsLength = items.length;
+  //             // key = UniqueKey();
+  //           }
+  //           return SizedBox(
+  //             width: MediaQuery.of(context).size.width,
+  //             height: MediaQuery.of(context).size.height - (LayoutStyles.appbarHeight + LayoutStyles.footerHeight),
+  //             child: Swiper(
+  //                 pagination: const SwiperPagination(
+  //                   alignment: Alignment.bottomCenter,
+  //                   builder: DotSwiperPaginationBuilder(
+  //                     color: Colors.grey,
+  //                   ),
+  //                 ),
+  //                 itemCount: styledItems.length,
+  //                 itemBuilder: (BuildContext context, int index) => styledItems[index])
+  //           );
+  //         }
+  //           return Container();
+  //     },
+  //   );
+  // }
 
   @override
   void dispose() {
@@ -625,6 +646,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+
     super.didChangeAppLifecycleState(state);
     firstLaunch = false;
 
