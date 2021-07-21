@@ -145,8 +145,9 @@ class NotificationController {
     channels[pair]!.listen((streamData) {
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       obj[crypto.name] = crypto;
-
-      streamControllers[pair]!.add(crypto);
+      if(streamControllers[pair] != null) {
+        streamControllers[pair]!.add(crypto);
+      }
 
       return;
     }).onDone(() => _onDoneChannel(pair));

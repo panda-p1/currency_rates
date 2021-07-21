@@ -371,6 +371,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     });
     orderListener.value = newObj;
     streamsNotifiers.remove(pair);
+    lastCurrencies.remove(pair);
+    previousCurrencies.remove(pair);
+
+    //mmfd
     context.read<CryptoBloc>().add(ConfirmedRemovePair(pair: pair));
 
   }
