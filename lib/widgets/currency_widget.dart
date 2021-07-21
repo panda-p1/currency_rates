@@ -31,8 +31,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
   double? prevYmax;
   double? prevYmin;
-  late Timer _timer;
-  late Timer _reloadTimer;
+  // late Timer _timer;
+  // late Timer _reloadTimer;
   Color? color;
   String? previousPrice;
   bool animate = false;
@@ -40,66 +40,66 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   //Initialize the data source
   @override
   void initState() {
-    _initGraphic();
+    // _initGraphic();
     super.initState();
   }
 
-  void _initGraphic() {
-    if(widget.chartData.isNotEmpty ) {
-      prevYmin = double.parse(widget.oldPrice)
-          - (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
-              - double.parse(widget.oldPrice)
-          ).abs();
-      prevYmax = double.parse(widget.oldPrice)
-          + (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
-              -double.parse(widget.oldPrice)
-          ).abs();
-    }
-
-    _timer = Timer(Duration(milliseconds: 400), () {
-      _timer.cancel();
-    });
-    _reloadTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      dashedLine = [];
-      for(var i = 0; i < 21; i++) {
-        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
-      }
-      // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
-      dashedLine = [];
-      for(var i = 0; i < 21; i++) {
-        dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
-      }
-      // if(chartData.length == 70) {
-      //   chartData.removeAt(0);
-      // }
-      if(widget.chartData.isNotEmpty) {
-        final yMax = double.parse(widget.oldPrice) +
-            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
-                .abs();
-        final yMin = double.parse(widget.oldPrice) -
-            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
-                .abs();
-        prevYmax = yMax;
-        prevYmin = yMin;
-        setState(() {});
-      } else {
-        // final price =
-        final yMax = double.parse(widget.oldPrice) +
-            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
-                .abs();
-        final yMin = double.parse(widget.oldPrice) -
-            (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
-                .abs();
-        prevYmax = yMax;
-        prevYmin = yMin;
-        setState(() {});
-      }
-    });
-    for(var i = 0; i < 21; i++) {
-      dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
-    }
-    // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
-  }
+  // void _initGraphic() {
+  //   if(widget.chartData.isNotEmpty ) {
+  //     prevYmin = double.parse(widget.oldPrice)
+  //         - (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
+  //             - double.parse(widget.oldPrice)
+  //         ).abs();
+  //     prevYmax = double.parse(widget.oldPrice)
+  //         + (widget.chartData.map((data) => double.parse(data.price)).toList().reduce(max)
+  //             -double.parse(widget.oldPrice)
+  //         ).abs();
+  //   }
+  //
+  //   _timer = Timer(Duration(milliseconds: 400), () {
+  //     _timer.cancel();
+  //   });
+  //   _reloadTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+  //     dashedLine = [];
+  //     for(var i = 0; i < 21; i++) {
+  //       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
+  //     }
+  //     // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
+  //     dashedLine = [];
+  //     for(var i = 0; i < 21; i++) {
+  //       dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
+  //     }
+  //     // if(chartData.length == 70) {
+  //     //   chartData.removeAt(0);
+  //     // }
+  //     if(widget.chartData.isNotEmpty) {
+  //       final yMax = double.parse(widget.oldPrice) +
+  //           (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+  //               .abs();
+  //       final yMin = double.parse(widget.oldPrice) -
+  //           (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+  //               .abs();
+  //       prevYmax = yMax;
+  //       prevYmin = yMin;
+  //       setState(() {});
+  //     } else {
+  //       // final price =
+  //       final yMax = double.parse(widget.oldPrice) +
+  //           (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+  //               .abs();
+  //       final yMin = double.parse(widget.oldPrice) -
+  //           (double.parse(widget.currencyPrice) - double.parse(widget.oldPrice))
+  //               .abs();
+  //       prevYmax = yMax;
+  //       prevYmin = yMin;
+  //       setState(() {});
+  //     }
+  //   });
+  //   for(var i = 0; i < 21; i++) {
+  //     dashedLine.add(GraphicPrice(time: DateTime.now().subtract(Duration(seconds: 10 * i)), open: widget.oldPrice, close: widget.oldPrice));
+  //   }
+  //   // chartData.add(GraphicPrice(time: DateTime.now(), open: widget.currencyPrice, close: widget.currencyPrice));
+  // }
   Widget _buildLiveLineChart() {
     return Center(
       child: SizedBox(
@@ -147,38 +147,38 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
   @override
   void dispose() {
-    _timer.cancel();
-    _reloadTimer.cancel();
+    // _timer.cancel();
+    // _reloadTimer.cancel();
     super.dispose();
   }
 
-  _callback() {
-    if(previousPrice != null) {
-      final pp = double.parse(previousPrice!);
-      final cp = double.parse(widget.currencyPrice);
-      if(pp < cp) {
-        _timer = Timer(Duration(milliseconds: 400), () {
-          _timer.cancel();
-        });
-        color = Colors.green;
-      } else {
-        if(pp == cp) {
-          color = null;
-        } else {
-          color = Colors.red;
-          _timer = Timer(Duration(milliseconds: 400), () {
-            _timer.cancel();
-          });
-        }
-      }
-    }
-    previousPrice = widget.currencyPrice;
-  }
+  // _callback() {
+  //   if(previousPrice != null) {
+  //     final pp = double.parse(previousPrice!);
+  //     final cp = double.parse(widget.currencyPrice);
+  //     if(pp < cp) {
+  //       _timer = Timer(Duration(milliseconds: 400), () {
+  //         _timer.cancel();
+  //       });
+  //       color = Colors.green;
+  //     } else {
+  //       if(pp == cp) {
+  //         color = null;
+  //       } else {
+  //         color = Colors.red;
+  //         _timer = Timer(Duration(milliseconds: 400), () {
+  //           _timer.cancel();
+  //         });
+  //       }
+  //     }
+  //   }
+  //   previousPrice = widget.currencyPrice;
+  // }
   @override
   Widget build(BuildContext context) {
-    if(!_timer.isActive) {
-      _callback();
-    }
+    // if(!_timer.isActive) {
+    //   _callback();
+    // }
     return SizedBox(
       height: widget.styles.currencyWidgetHeight() + 5,
 
@@ -194,7 +194,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
               children: [
                 _currencyName(),
                 Spacer(),
-                if(widget.chartData.isNotEmpty) _buildLiveLineChart(),
+                // if(widget.chartData.isNotEmpty) _buildLiveLineChart(),
                 _currencyPrice(),
               ],
             ),
