@@ -32,7 +32,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   double? prevYmax;
   double? prevYmin;
   late Timer _timer;
-  late Timer _reloadTimer;
+  // late Timer _reloadTimer;
   Color? color;
   String? previousPrice;
   bool animate = false;
@@ -151,7 +151,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   @override
   void dispose() {
     _timer.cancel();
-    _reloadTimer.cancel();
+    // _reloadTimer.cancel();
     super.dispose();
   }
 

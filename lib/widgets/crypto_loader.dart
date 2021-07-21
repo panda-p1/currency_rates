@@ -10,7 +10,8 @@ class CryptoLoader extends StatefulWidget {
   final bool isEditingMode;
   final Function onDeletePress;
   final String cryptoName;
-  const CryptoLoader({Key? key,
+  final int index;
+  const CryptoLoader({Key? key, required this.index,
     required this.onDeletePress, required this.styles,
     required this.cryptoName, required this.isEditingMode}) : super(key: key);
 
@@ -28,11 +29,14 @@ class _CryptoLoaderState extends State<CryptoLoader> {
         children: [
         if(widget.isEditingMode)
           IconButton(
+              padding: EdgeInsets.only(left: 8),
+              constraints: BoxConstraints(),
+              splashRadius: 5,
               onPressed: () => widget.onDeletePress(widget.cryptoName),
               icon: Icon(Icons.remove_circle_sharp, color: Colors.red,)),
 
         Padding(
-          padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
+          padding: EdgeInsets.only(left: 14.0),
           child: Text(widget.cryptoName,
               style: TextStyle(
                 fontSize: widget.styles.currencyNameFontSize(),
@@ -43,8 +47,34 @@ class _CryptoLoaderState extends State<CryptoLoader> {
         Spacer(),
         Padding(
           padding: EdgeInsets.only(right: MediaQuery.of(context).orientation == Orientation.portrait ? 14 : 36),
-          child: Loader(styles: widget.styles,),
-        )],
+          child:           Loader(styles: widget.styles,),
+          // child: widget.isEditingMode
+          //     ?
+          // ReorderableDragStartListener(
+          //   // index: orderListener.value.keys.toList().indexOf(crypto.name),
+          //     index: widget.index,
+          //     child: IconButton(
+          //         splashRadius: 20,
+          //         onPressed: () {},
+          //         icon: Icon(Icons.format_align_justify_outlined )
+          //     )
+          // )
+          //     :
+          //     Container()
+          // ,
+        ),
+          if(widget.isEditingMode)
+            ReorderableDragStartListener(
+              // index: orderListener.value.keys.toList().indexOf(crypto.name),
+                index: widget.index,
+                child: IconButton(
+                    splashRadius: 20,
+                    onPressed: () {},
+                    icon: Icon(Icons.format_align_justify_outlined )
+                )
+            )
+      ],
+
     );
   }
 

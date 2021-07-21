@@ -453,19 +453,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     return ValueListenableBuilder<bool>(
         valueListenable: isEditingMode,
         builder: (_, mode, __) {
-          if(mode) {
-            return CryptoLoader(
-              styles: PortraitStyles(),
-              onDeletePress: _onDeletePair,
-              isEditingMode: true,
-              cryptoName: cryptoName,
-            );
-          }
           return CryptoLoader(
             styles: PortraitStyles(),
             onDeletePress: _onDeletePair,
-            isEditingMode: false,
+            isEditingMode: mode,
             cryptoName: cryptoName,
+            index: orderListener.value.keys.toList().indexOf(cryptoName),
           );
         });
   }
