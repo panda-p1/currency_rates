@@ -34,7 +34,7 @@ SPEC CHECKSUMS:
   Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
   flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
   Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
-  shared_preferences: 5d0fc5691f4e7293ddfc1b599ca398f8af42f5e7
+  shared_preferences: af6bfa751691cdc24be3045c43ec037377ada40d
 
 PODFILE CHECKSUM: 4e8f8b2be68aeea4c0d5beb6ff1e79fface1d048
 
