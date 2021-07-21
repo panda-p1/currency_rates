@@ -31,8 +31,8 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
   double? prevYmax;
   double? prevYmin;
-  // late Timer _timer;
-  // late Timer _reloadTimer;
+  late Timer _timer;
+  late Timer _reloadTimer;
   Color? color;
   String? previousPrice;
   bool animate = false;
@@ -41,6 +41,9 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
   @override
   void initState() {
     // _initGraphic();
+    _timer = Timer(Duration(milliseconds: 400), () {
+          _timer.cancel();
+    });
     super.initState();
   }
 
@@ -147,38 +150,38 @@ class _CurrencyWidgetState extends State<CurrencyWidget> with TickerProviderStat
 
   @override
   void dispose() {
-    // _timer.cancel();
-    // _reloadTimer.cancel();
+    _timer.cancel();
+    _reloadTimer.cancel();
     super.dispose();
   }
 
-  // _callback() {
-  //   if(previousPrice != null) {
-  //     final pp = double.parse(previousPrice!);
-  //     final cp = double.parse(widget.currencyPrice);
-  //     if(pp < cp) {
-  //       _timer = Timer(Duration(milliseconds: 400), () {
-  //         _timer.cancel();
-  //       });
-  //       color = Colors.green;
-  //     } else {
-  //       if(pp == cp) {
-  //         color = null;
-  //       } else {
-  //         color = Colors.red;
-  //         _timer = Timer(Duration(milliseconds: 400), () {
-  //           _timer.cancel();
-  //         });
-  //       }
-  //     }
-  //   }
-  //   previousPrice = widget.currencyPrice;
-  // }
+  _callback() {
+    if(previousPrice != null) {
+      final pp = double.parse(previousPrice!);
+      final cp = double.parse(widget.currencyPrice);
+      if(pp < cp) {
+        _timer = Timer(Duration(milliseconds: 400), () {
+          _timer.cancel();
+        });
+        color = Colors.green;
+      } else {
+        if(pp == cp) {
+          color = null;
+        } else {
+          color = Colors.red;
+          _timer = Timer(Duration(milliseconds: 400), () {
+            _timer.cancel();
+          });
+        }
+      }
+    }
+    previousPrice = widget.currencyPrice;
+  }
   @override
   Widget build(BuildContext context) {
-    // if(!_timer.isActive) {
-    //   _callback();
-    // }
+    if(!_timer.isActive) {
+      _callback();
+    }
     return SizedBox(
       height: widget.styles.currencyWidgetHeight() + 5,
 

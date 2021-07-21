@@ -275,6 +275,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
 
   _wrapItems(Map<String, Widget> renderItems, Map<String, int> order) {
+    if(order.length == 0) {
+      return _banner();
+    }
     return ReorderableListView(
         buildDefaultDragHandles: false,
         shrinkWrap: true,
