@@ -2,11 +2,7 @@ import 'dart:async' show Future, StreamController;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:currencies_pages/bloc/crypto/states.dart';
 import 'package:currencies_pages/model/crypto.dart';
-import 'package:currencies_pages/model/graphic_price.dart';
-
-import '../constants.dart';
 import '../tools.dart';
 import 'localData.dart';
 
@@ -47,9 +43,6 @@ const BTCEURURL = 'wss://stream.binance.com:9443/stream?streams=btceur@ticker';
 // };
 
 class NotificationController {
-  var btcrub = '';
-  var btceur = '';
-  var btcusd = '';
   static NotificationController? _singleton;
 
   static NotificationController getInstance() {
@@ -59,17 +52,11 @@ class NotificationController {
     return _singleton!;
   }
 
-  isEmpty() {
-    return obj.isEmpty;
-  }
-
   String getUrlByPair(String tickerName) {
     return 'wss://stream.binance.com:9443/stream?streams=${tickerName.toLowerCase()}@ticker';
   }
   List<String> pairs = [];
   Map<String, StreamController<Crypto?>> streamControllers = {};
-
-  late Map<String, Crypto?> obj;
 
   Map<String, WebSocket> channels = {};
 
@@ -87,6 +74,7 @@ class NotificationController {
   }
 
   Future<void> confirmedCloseConnection(String pair) async {
+
     if(channels[pair] != null) {
       channels[pair]!.close();
     }
@@ -98,10 +86,9 @@ class NotificationController {
   }
 
   closeAllConnections() {
-    pairs = [];
-    channels.forEach((key, value) {
-      value.close();
-    });
+    for(var i = 0; i < channels.length; i++) {
+      confirmedCloseConnection(channels.keys.toList()[i]);
+    }
   }
 
   addPair(String pair) async {
@@ -112,26 +99,12 @@ class NotificationController {
   }
 
   _onDoneChannel(String pair) {
-    // streamControllers[pair]!.addError(ClosedCrypto());
-
-    // if(channels[pair] != null) {
-    //   if(channels[pair]!.closeCode == 1002) {
-    //     // streamController.addError(CryptoError());
-    //   }
-    // }
-    //
     channels.remove(pair);
     streamControllers.remove(pair);
-
-    //
-    // for (var chain in currencyChains[pair]!) {
-    //   obj.remove(chain);
-    // }
   }
   _addListener(String pair) {
     channels[pair]!.listen((streamData) {
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
-      obj[crypto.name] = crypto;
       if(streamControllers[pair] != null && !streamControllers[pair]!.isClosed) {
         streamControllers[pair]!.add(crypto);
       }
@@ -153,19 +126,14 @@ class NotificationController {
     channels.forEach((key, value) {
       _addListener(key);
     });
-    print('pairss.length');
-    print(pairss.length);
-    print('pairs.length');
-    print(pairs.length);
-    print('channels.length');
-    print(channels.length);
   }
   initWebSocketConnection() async {
     print("connecting...");
+    print(pairs);
     final chosenPairs = await LocalDataProvider().getChosenPairs();
     await _initPairs(chosenPairs);
   }
-  
+
   Future<List<WebSocket>> _initConnectWs(Map<String, String> pairs) async {
     return await Future.wait(pairs.values.map((e) => WebSocket.connect(e)));
   }

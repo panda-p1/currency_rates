@@ -26,16 +26,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       final reorderedCurrencies = await localDataProvider.getLocalCurrencies();
       // yield LocalCryptoLoaded(currencies: reorderedCurrencies);
     }
-    if(event is CheckIfObjIsEmpty) {
-      final isEmpty = notifCtrl.isEmpty();
 
-      if(isEmpty) {
-        yield CryptoEmpty();
-      } else {
-        final controllers = notifCtrl.streamControllers;
-        yield CryptoLoaded(streamControllers: controllers);
-      }
-    }
     if(event is CryptoInitConnection) {
       try {
         yield CryptoLoading();
@@ -58,9 +49,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     if(event is CryptoRemovePair) {
       yield CryptoModal(confirmationDetails: event.pair);
     }
-    if(event is NotConfirmedRemovePair) {
-      yield CryptoEmptyState();
-    }
+
     if(event is ConfirmedRemovePair) {
       // yield CryptoEmptyState();
 

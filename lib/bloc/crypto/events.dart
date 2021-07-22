@@ -78,8 +78,3 @@ class ReorderPair extends CryptoEvent {
   List<Object> get props => [newIdx, pair];
 }
 
-class CheckIfObjIsEmpty extends CryptoEvent {
-  @override
-  List<Object> get props => [];
-}
-

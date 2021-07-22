@@ -50,7 +50,7 @@ abstract class LocalDataRepo {
   Future<BinanceRestCurrencies> getBinanceRestapiCurrencies();
 }
 const defaultTickers = [
-  'BTCUSDT', 'ETHUSDT', 'BTCRUB','BTCEUR'
+  'BTCUSDT', 'ETHUSDT', 'BTCRUB','BTCEUR', 'ETHRUB', 'ETHTRY', 'ETHEUR'
 ];
 class LocalDataProvider implements LocalDataRepo {
     Future<BinanceRestCurrencies> getBinanceRestapiCurrencies() async {
@@ -66,10 +66,11 @@ class LocalDataProvider implements LocalDataRepo {
     final prefs = await SharedPreferences.getInstance();
     final pairsJson = jsonDecode(prefs.getString('chosenPairs')!) as List;
 
-    final oldIdx = pairsJson.indexOf(pairsJson);
+    final oldIdx = pairsJson.indexOf(pair);
     final val = pairsJson.removeAt(oldIdx);
     pairsJson.insert(newIdx, val);
     prefs.setString('chosenPairs', jsonEncode(pairsJson));
+    print(prefs.getString('chosenPairs')!);
     //
     // final currencies = await getLocalCurrencies();
     // final List<MapEntry<Currency_Pairs, Crypto?>> list = [];
