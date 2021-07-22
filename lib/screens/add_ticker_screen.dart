@@ -359,7 +359,6 @@ class _AddTickerScreenState extends State<AddTickerScreen> with WidgetsBindingOb
   }
 
   _onPairClick(String pair) {
-    print('on pair click');
     if(!pairsAdded[pair]!) { // if it false btn was pressed
       context.read<LocalDataBloc>().add(AddPair(pair: pair));
     } else {

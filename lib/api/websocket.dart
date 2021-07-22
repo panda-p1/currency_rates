@@ -46,8 +46,6 @@ const BTCEURURL = 'wss://stream.binance.com:9443/stream?streams=btceur@ticker';
 //   Currency_Pairs.ethusd: ETHUSDURL,
 // };
 
-
-
 class NotificationController {
   var btcrub = '';
   var btceur = '';
@@ -136,12 +134,10 @@ class NotificationController {
     // }
   }
   _addListener(String pair) {
-    print(pair);
-    print(streamControllers);
     channels[pair]!.listen((streamData) {
       final crypto = CryptoFromBackendHelper.createCrypto(jsonDecode(streamData)['data']);
       obj[crypto.name] = crypto;
-      if(streamControllers[pair] != null) {
+      if(streamControllers[pair] != null && !streamControllers[pair]!.isClosed) {
         streamControllers[pair]!.add(crypto);
       }
 
@@ -157,7 +153,6 @@ class NotificationController {
       channelPairs[e] = getUrlByPair(e);
     });
     final websockets = await _initConnectWs(channelPairs);
-    print(websockets);
     channels = {for(var i in List.generate(websockets.length, (index) => index)) channelPairs.keys.toList()[i]: websockets[i]};
     channels.forEach((key, value) {
       _addListener(key);
@@ -166,7 +161,6 @@ class NotificationController {
   initWebSocketConnection() async {
     print("connecting...");
     final chosenPairs = await LocalDataProvider().getChosenPairs();
-    print(chosenPairs);
     obj = {for (var pair in chosenPairs) pair: null};
     await _initPairs(chosenPairs);
   }

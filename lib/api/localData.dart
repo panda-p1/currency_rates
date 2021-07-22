@@ -115,13 +115,18 @@ class LocalDataProvider implements LocalDataRepo {
 
   @override
   Future<List<String>> getChosenPairs() async {
+      print('chosen pairs');
     final prefs = await SharedPreferences.getInstance();
     final pairsString = prefs.getString('chosenPairs');
     if(pairsString == null) {
+      print('pairs are null, default: ');
+      print(defaultTickers);
       saveDefaultPairs();
       return defaultTickers;
     }
+
     final pairsJson = jsonDecode(pairsString) as List;
+    print(pairsJson.map<String>((e)=>e.toString()).toList());
     return pairsJson.map<String>((e)=>e.toString()).toList();
   }
 

@@ -33,7 +33,6 @@ class CurrencyProvider implements CurrencyRepo {
     }).toList();
   }
   Future<TickerDetails> getDetailTickerInfo(String tickerName) async {
-    print(tickerName);
     final response = await http.get(Uri.parse('https://api.binance.com/api/v3/ticker/24hr'));
     final details = jsonDecode(response.body) as List;
     return TickerDetails.fromJson(details.where((element) => element['symbol'] == tickerName).toList()[0]);

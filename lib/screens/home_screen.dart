@@ -41,6 +41,8 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
+  String? connectedTime;
+  String? disconnectedTime;
 
   Map<String, List<GraphicPrice>> chartData = {};
 
@@ -74,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   @override
   void initState() {
+    connectedTime = DateTime.now().second.toString();
 
     _initRates();
     _initCryptoWebSocket();
@@ -206,8 +209,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         // return _localCryptoLoaded(state.currencies);
       }
       if(state is CryptoLoaded) {
-        print('THERE');
-        print('${streamsNotifiers.keys.length} ${state.streamControllers.keys.length}');
         if(streamsNotifiers.keys.length != state.streamControllers.keys.length) {
           streamsNotifiers = state.streamControllers.map((key, value) {
             return MapEntry(key, ValueNotifier<Crypto?>(null));
@@ -230,31 +231,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   Widget _footerUI() {
     return Align(
       alignment: Alignment.centerRight,
-      child: ValueListenableBuilder<bool>(
-          valueListenable: isEditingMode,
-          builder: (_, mode, __) {
-            if(mode) {
-              return TextButton(
-                onPressed: () async {
-                  isEditingMode.value = false;
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) =>
-                      MultiBlocProvider(
-                        providers: [
-                          BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
-                          BlocProvider.value(value: BlocProvider.of<LocalDataBloc>(context),)
-                          // BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
-                        ],
-                        child: AddTickerScreen(),)
-                  ));
-                },
-                child: Padding(
-                  padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 8 : 36),
-                  child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
-                ),
-              );
-            }
-            return Container();
-          }),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Text('connected time: $connectedTime'),
+            ),
+
+            Text('disconnected time: $disconnectedTime'),
+
+            Spacer(),
+            ValueListenableBuilder<bool>(
+                valueListenable: isEditingMode,
+                builder: (_, mode, __) {
+                  if(mode) {
+                    return TextButton(
+                      onPressed: () async {
+                        isEditingMode.value = false;
+                        await Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                            MultiBlocProvider(
+                              providers: [
+                                BlocProvider(create: (BuildContext context) => CurrenciesBloc(currencyRepo: CurrencyProvider()),),
+                                BlocProvider.value(value: BlocProvider.of<LocalDataBloc>(context),)
+                                // BlocProvider(create: (BuildContext context) => LocalDataBloc.getInstance(),),
+                              ],
+                              child: AddTickerScreen(),)
+                        ));
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 14.0, right: MediaQuery.of(context).orientation == Orientation.portrait ? 8 : 36),
+                        child: Text('Add ticker', style: TextStyle(color: Colors.blue[400]),),
+                      ),
+                    );
+                  }
+                  return Container();
+                }),
+          ],
+        ),
+      ),
     );
   }
 
@@ -399,7 +415,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         ValueListenableBuilder<Crypto?>(
             valueListenable: streamsNotifiers[key]!,
             builder: (_, crypto, __) {
-              print(crypto);
               if(crypto == null) {
                 return _loaderWrapper(key);
               }
@@ -591,24 +606,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-
-    super.didChangeAppLifecycleState(state);
     firstLaunch = false;
-
+    print(state);
     if(state == AppLifecycleState.resumed) {
+      connectedTime = DateTime.now().second.toString();
+      print('connection resumed');
       lastCurrencies = Map.from(previousCurrencies);
       previousCurrencies = {};
       context.read<CryptoBloc>().add(CryptoInitConnection());
-    } else {
+      setState(() {
+        _isInForeground = true;
+      });
+    }
+    if(state == AppLifecycleState.paused) {
+      disconnectedTime = DateTime.now().second.toString();
+
+      print('connection dead');
       chartData.keys.toList().forEach((element) {
         chartData[element] = [];
       });
-
-
       context.read<CryptoBloc>().add(CryptoCloseAllConnections());
+
+      cryptoController.forEach((key, value) {
+        value.close();
+      });
     }
-    setState(() {
-      _isInForeground = state == AppLifecycleState.resumed;
-    });
+
+    if(_isInForeground) {
+      setState(() {
+        _isInForeground = false;
+      });
+    }
+
+    super.didChangeAppLifecycleState(state);
   }
+
 }
