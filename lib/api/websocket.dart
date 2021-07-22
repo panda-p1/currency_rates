@@ -98,22 +98,17 @@ class NotificationController {
   }
 
   closeAllConnections() {
-    for(var i = 0; i < channels.length; i++) {
-      confirmedCloseConnection(channels.keys.toList()[i]);
-    }
+    pairs = [];
+    channels.forEach((key, value) {
+      value.close();
+    });
   }
 
   addPair(String pair) async {
     pairs.add(pair);
-    _addToBeginningOfObj(pair);
     addStreamCtrl(pair);
     channels.addEntries([MapEntry(pair, await connectWs(pair))]);
-
     _addListener(pair);
-  }
-
-  _addToBeginningOfObj(String pair) {
-    obj = {...{pair: null},...obj};
   }
 
   _onDoneChannel(String pair) {
@@ -146,6 +141,7 @@ class NotificationController {
   }
 
   _initPairs(List<String> pairss) async {
+    pairs = [];
     pairs.addAll(pairss);
     pairs.forEach((element) {addStreamCtrl(element);});
     final Map<String, String> channelPairs = {};
@@ -157,11 +153,16 @@ class NotificationController {
     channels.forEach((key, value) {
       _addListener(key);
     });
+    print('pairss.length');
+    print(pairss.length);
+    print('pairs.length');
+    print(pairs.length);
+    print('channels.length');
+    print(channels.length);
   }
   initWebSocketConnection() async {
     print("connecting...");
     final chosenPairs = await LocalDataProvider().getChosenPairs();
-    obj = {for (var pair in chosenPairs) pair: null};
     await _initPairs(chosenPairs);
   }
   
