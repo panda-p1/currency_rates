@@ -5,14 +5,9 @@ import 'dart:ui';
 import 'package:currencies_pages/api/currenciesProvider.dart';
 import 'package:currencies_pages/model/graphic_price.dart';
 import 'package:currencies_pages/screens/currency_graphic.dart';
-import 'package:currencies_pages/widgets/bottom_circle_loader.dart';
 import 'package:currencies_pages/widgets/crypto_loader.dart';
 import 'package:currencies_pages/widgets/currency_widget.dart';
-import 'package:currencies_pages/widgets/scroll_notification_listener.dart';
-import 'package:flutter_reorderable_list/flutter_reorderable_list.dart' as Listss;
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:intl/intl.dart';
-import 'package:reorderables/reorderables.dart';
 import 'package:currencies_pages/bloc/crypto/bloc.dart';
 import 'package:currencies_pages/bloc/crypto/events.dart';
 import 'package:currencies_pages/bloc/crypto/states.dart';
@@ -25,9 +20,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
 
-import '../constants.dart';
 import '../styles.dart';
 import 'add_ticker_screen.dart';
 
@@ -62,7 +55,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   final ValueNotifier<int> cryptoListLength = ValueNotifier<int>(0);
 
-
   final ValueNotifier<Map<String, int>> orderListener = ValueNotifier<Map<String, int>>({});
 
   final ValueNotifier<Orientation> orientationUI = ValueNotifier<Orientation>(Orientation.portrait);
@@ -77,9 +69,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   @override
   void initState() {
+    super.initState();
+    WidgetsBinding.instance!.addObserver(this);
+
     _initRates();
     _initCryptoWebSocket();
-    WidgetsBinding.instance!.addObserver(this);
 
     controller = AnimationController(
       vsync: this,
@@ -98,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         });
     animation1 = ColorTween(begin: Colors.green, end: Colors.grey[700])
           .animate(controller);
-    super.initState();
   }
   _initRates() {
     context.read<CurrenciesBloc>().add(GetBinance());
@@ -434,7 +427,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             } else {
               chartData[crypto.name] = [];
             }
-            if(!previousCurrencies.containsKey(crypto.name)) {
+            if(!previousCurrencies.containsKey(crypto.name)
+                || (previousCurrencies.containsKey(crypto.name) && previousCurrencies[crypto.name] == null)) {
               previousCurrencies[crypto.name] = crypto.price;
             }
             Future.delayed(Duration.zero, () {
@@ -631,23 +625,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     controller.dispose();
     WidgetsBinding.instance!.removeObserver(this);
     super.dispose();
-
   }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     firstLaunch = false;
     print(state);
     if(state == AppLifecycleState.resumed) {
       print('connection resumed');
-      lastCurrencies = Map.from(previousCurrencies);
-      previousCurrencies = {};
+
       context.read<CryptoBloc>().add(CryptoInitConnection());
-      setState(() {
-        _isInForeground = true;
-      });
+      _isInForeground = true;
     } else {
       isEditingMode.value = false;
       if(_isInForeground) {
+        lastCurrencies = Map.from(previousCurrencies);
+        previousCurrencies = {};
         print('connection dead');
         chartData.keys.toList().forEach((element) {
           chartData[element] = [];
@@ -657,17 +650,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         cryptoController.forEach((key, value) {
           value.close();
         });
-
-        if(_isInForeground) {
-          setState(() {
-            _isInForeground = false;
-          });
-        }
+        _isInForeground = false;
       }
     }
-
-
-    super.didChangeAppLifecycleState(state);
   }
 
 }

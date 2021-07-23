@@ -6,42 +6,6 @@ import 'package:currencies_pages/model/crypto.dart';
 import '../tools.dart';
 import 'localData.dart';
 
-const BTCUSDURL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@ticker';
-const ETHUSDURL = 'wss://stream.binance.com:9443/stream?streams=ethusdt@ticker';
-const DOGEUSDURL = 'wss://stream.binance.com:9443/stream?streams=dogeusdt@ticker';
-const BTCRUBURL = 'wss://stream.binance.com:9443/stream?streams=btcrub@ticker';
-const BTCEURURL = 'wss://stream.binance.com:9443/stream?streams=btceur@ticker';
-//
-// Map<Currency_Pairs,List<Currency_Pairs>> currencyChains = {
-//   Currency_Pairs.btcusd: [Currency_Pairs.btcusd, Currency_Pairs.usdrub, Currency_Pairs.eurusd],
-//   Currency_Pairs.btceur: [Currency_Pairs.btceur, Currency_Pairs.eurrub, Currency_Pairs.eurusd],
-//   Currency_Pairs.btcrub: [Currency_Pairs.btcrub, Currency_Pairs.eurrub, Currency_Pairs.usdrub],
-//   Currency_Pairs.eurusd: [Currency_Pairs.eurusd],
-//   Currency_Pairs.eurrub: [Currency_Pairs.eurrub],
-//   Currency_Pairs.usdrub: [Currency_Pairs.usdrub],
-//   // Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
-//   Currency_Pairs.ethusd: [Currency_Pairs.ethusd],
-// };
-//
-// Map<Currency_Pairs,List<Currency_Pairs>> reversedCurrencyChain = {
-//   Currency_Pairs.btcusd: [Currency_Pairs.btcusd],
-//   Currency_Pairs.btceur: [Currency_Pairs.btceur],
-//   Currency_Pairs.btcrub: [Currency_Pairs.btcrub],
-//   Currency_Pairs.eurusd: [Currency_Pairs.btcusd, Currency_Pairs.btceur],
-//   Currency_Pairs.eurrub: [Currency_Pairs.btceur, Currency_Pairs.btcrub],
-//   Currency_Pairs.usdrub: [Currency_Pairs.btcusd, Currency_Pairs.btcrub],
-//   // Currency_Pairs.dogeusd: [Currency_Pairs.dogeusd],
-//   Currency_Pairs.ethusd: [Currency_Pairs.ethusd],
-// };
-//
-// Map<Currency_Pairs, String> pairsUrls = {
-//   Currency_Pairs.btcusd: BTCUSDURL,
-//   Currency_Pairs.btceur: BTCEURURL,
-//   Currency_Pairs.btcrub: BTCRUBURL,
-//   // Currency_Pairs.dogeusd: DOGEUSDURL,
-//   Currency_Pairs.ethusd: ETHUSDURL,
-// };
-
 class NotificationController {
   static NotificationController? _singleton;
 
@@ -89,6 +53,7 @@ class NotificationController {
     for(var i = 0; i < channels.length; i++) {
       confirmedCloseConnection(channels.keys.toList()[i]);
     }
+    pairs = [];
   }
 
   addPair(String pair) async {
@@ -114,7 +79,6 @@ class NotificationController {
   }
 
   _initPairs(List<String> pairss) async {
-    pairs = [];
     pairs.addAll(pairss);
     pairs.forEach((element) {addStreamCtrl(element);});
     final Map<String, String> channelPairs = {};
@@ -129,7 +93,6 @@ class NotificationController {
   }
   initWebSocketConnection() async {
     print("connecting...");
-    print(pairs);
     final chosenPairs = await LocalDataProvider().getChosenPairs();
     await _initPairs(chosenPairs);
   }
@@ -140,9 +103,6 @@ class NotificationController {
 
   Future<WebSocket> connectWs(String pair) async {
     return await WebSocket.connect(getUrlByPair(pair));
-  }
-  void _onDisconnected() {
-    // initWebSocketConnection();
   }
 }
 
